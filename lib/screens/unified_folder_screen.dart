@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:hires_streamer/models/track.dart';
 import 'package:hires_streamer/providers/playback_provider.dart';
 import 'package:hires_streamer/screens/queue_tab.dart'; // To use UnifiedLibraryItem
+import 'package:hires_streamer/providers/local_library_provider.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
 
 class _FolderEntry {
   final String name;
@@ -26,13 +28,11 @@ class _FolderEntry {
 class UnifiedFolderScreen extends ConsumerStatefulWidget {
   final String folderName;
   final String folderPath;
-  final List<UnifiedLibraryItem> tracks;
 
   const UnifiedFolderScreen({
     super.key,
     required this.folderName,
     required this.folderPath,
-    required this.tracks,
   });
 
   @override
@@ -49,91 +49,19 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _calculateEntries();
   }
 
-  void _calculateEntries() {
+  void _calculateEntries(List<UnifiedLibraryItem> tracks) {
     final entriesMap = <String, _FolderEntry>{};
     final root = widget.folderPath;
 
-    String safGetRelative(String path, String root) {
-      if (path == root) return '.';
-      if (!path.startsWith('content://')) {
-        return p.relative(path, from: root);
-      }
-
+    for (final item in tracks) {
       try {
-        final pathUri = Uri.parse(path);
-        final rootUri = Uri.parse(root);
-
-        final pathSegments = pathUri.pathSegments;
-        final documentIdx = pathSegments.indexOf('document');
-        if (documentIdx == -1 || documentIdx == pathSegments.length - 1) {
-          return p.relative(path, from: root);
-        }
-
-        final fullDocId = Uri.decodeComponent(
-          pathSegments.sublist(documentIdx + 1).join('/'),
-        ).replaceAll(':', '/');
-
-        // Extract root doc ID. Prefer document ID over tree ID if both exist.
-        String rootDocId = '';
-        final rootSegments = rootUri.pathSegments;
-        final rootDocIdx = rootSegments.indexOf('document');
-        final rootTreeIdx = rootSegments.indexOf('tree');
-
-        if (rootDocIdx != -1 && rootDocIdx < rootSegments.length - 1) {
-          rootDocId = Uri.decodeComponent(
-            rootSegments.sublist(rootDocIdx + 1).join('/'),
-          );
-        } else if (rootTreeIdx != -1 && rootTreeIdx < rootSegments.length - 1) {
-          rootDocId = Uri.decodeComponent(rootSegments[rootTreeIdx + 1]);
-        }
-        rootDocId = rootDocId.replaceAll(':', '/');
-
-        if (fullDocId == rootDocId) return '.';
-        if (fullDocId.startsWith('$rootDocId/')) {
-          return fullDocId.substring(rootDocId.length + 1);
-        } else if (fullDocId.startsWith(rootDocId)) {
-          var relative = fullDocId.substring(rootDocId.length);
-          if (relative.startsWith('/')) relative = relative.substring(1);
-          return relative.isEmpty ? '.' : relative;
-        }
-      } catch (_) {}
-
-      return p.relative(path, from: root);
-    }
-
-    String safJoin(String root, String segment) {
-      if (!root.startsWith('content://')) return p.join(root, segment);
-      try {
-        final uri = Uri.parse(root);
-        final segments = List<String>.from(uri.pathSegments);
-        final documentIdx = segments.indexOf('document');
-        final treeIdx = segments.indexOf('tree');
-
-        if (documentIdx != -1) {
-          if (documentIdx == segments.length - 1) {
-            segments.add(Uri.encodeComponent(segment));
-          } else {
-            final docId = Uri.decodeComponent(segments[documentIdx + 1]);
-            final newDocId = '$docId/$segment'.replaceAll('//', '/');
-            segments[documentIdx + 1] = Uri.encodeComponent(newDocId);
-          }
-        } else if (treeIdx != -1 && treeIdx < segments.length - 1) {
-          final treeId = Uri.decodeComponent(segments[treeIdx + 1]);
-          final newDocId = '$treeId/$segment';
-          segments.add('document');
-          segments.add(Uri.encodeComponent(newDocId));
-        }
-        return uri.replace(pathSegments: segments).toString();
-      } catch (_) {}
-      return p.join(root, segment);
-    }
-
-    for (final item in widget.tracks) {
-      try {
-        final relative = safGetRelative(item.filePath, root);
+        final relative = LocalLibraryNotifier.getRelativePath(
+          item.filePath,
+          root,
+        );
+        if (relative == null) continue;
         final parts = p.split(relative);
 
         if (parts.length == 1 && relative != '.') {
@@ -150,11 +78,16 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
 
           // Subfolder
           final subfolderName = parts[0];
-          if (subfolderName == 'document' || subfolderName == 'primary') {
+          if (subfolderName == 'document' ||
+              subfolderName == 'primary' ||
+              subfolderName == 'tree') {
             continue;
           }
 
-          final subfolderPath = safJoin(root, subfolderName);
+          final subfolderPath = LocalLibraryNotifier.safJoin(
+            root,
+            subfolderName,
+          );
           if (entriesMap.containsKey(subfolderPath)) {
             entriesMap[subfolderPath]!.descendantTracks.add(item);
           } else {
@@ -220,9 +153,12 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
     );
   }
 
-  void _playAll({bool shuffle = false}) {
+  void _playAll(
+    List<UnifiedLibraryItem> currentTracks, {
+    bool shuffle = false,
+  }) {
     // Collect all tracks recursively
-    final tracksToPlay = widget.tracks.map(_toTrack).toList();
+    final tracksToPlay = currentTracks.map(_toTrack).toList();
     if (shuffle) {
       tracksToPlay.shuffle();
     } else {
@@ -241,6 +177,48 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final expandedHeight = _calculateExpandedHeight(context);
+
+    // Watch global state dynamically
+    final localLibraryItems = ref.watch(
+      localLibraryProvider.select((s) => s.items),
+    );
+    final historyItems = ref.watch(
+      downloadHistoryProvider.select((s) => s.items),
+    );
+
+    // Merge and deduplicate
+    final unifiedDownloaded = historyItems
+        .map((item) => UnifiedLibraryItem.fromDownloadHistory(item))
+        .toList(growable: false);
+    final unifiedLocal = localLibraryItems
+        .map((item) => UnifiedLibraryItem.fromLocalLibrary(item))
+        .toList(growable: false);
+
+    final Map<String, UnifiedLibraryItem> deduplicated = {};
+    for (final item in unifiedDownloaded) {
+      if (item.filePath.isNotEmpty) {
+        deduplicated[LocalLibraryNotifier.normalizePath(item.filePath)] = item;
+      }
+    }
+    for (final item in unifiedLocal) {
+      if (item.filePath.isNotEmpty) {
+        final key = LocalLibraryNotifier.normalizePath(item.filePath);
+        if (!deduplicated.containsKey(key)) {
+          deduplicated[key] = item;
+        }
+      }
+    }
+
+    // Filter by folderPath
+    final currentTracks = deduplicated.values.where((item) {
+      if (item.filePath.isEmpty) return false;
+      return LocalLibraryNotifier.isPathInside(
+        item.filePath,
+        widget.folderPath,
+      );
+    }).toList();
+
+    _calculateEntries(currentTracks);
 
     return Scaffold(
       body: CustomScrollView(
@@ -266,6 +244,7 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            actions: [],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.pin,
               background: Stack(
@@ -304,7 +283,7 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
                           const SizedBox(height: 8),
 
                           Text(
-                            '${widget.tracks.length} tracks',
+                            '${currentTracks.length} tracks',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontSize: 14,
@@ -327,7 +306,9 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => _playAll(shuffle: false),
+                      onPressed: currentTracks.isEmpty
+                          ? null
+                          : () => _playAll(currentTracks, shuffle: false),
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('Play'),
                       style: FilledButton.styleFrom(
@@ -341,7 +322,9 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _playAll(shuffle: true),
+                      onPressed: currentTracks.isEmpty
+                          ? null
+                          : () => _playAll(currentTracks, shuffle: true),
                       icon: const Icon(Icons.shuffle),
                       label: const Text('Shuffle'),
                       style: OutlinedButton.styleFrom(
@@ -356,143 +339,148 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.only(top: 8, bottom: 32),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final entry = _entries[index];
-                if (entry.isFolder) {
+          if (currentTracks.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: Text('No tracks found in this folder')),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.only(top: 8, bottom: 32),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final entry = _entries[index];
+                  if (entry.isFolder) {
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 4,
+                      ),
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.folder,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        entry.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      subtitle: Text(
+                        '${entry.descendantTracks.length} tracks',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UnifiedFolderScreen(
+                              folderName: entry.name,
+                              folderPath: entry.path,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  final track = entry.track!;
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 4,
                     ),
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 48,
+                        height: 48,
                         color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.folder,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      entry.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: Text(
-                      '${entry.descendantTracks.length} tracks',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UnifiedFolderScreen(
-                            folderName: entry.name,
-                            folderPath: entry.path,
-                            tracks: entry.descendantTracks,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-
-                final track = entry.track!;
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 4,
-                  ),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      color: colorScheme.surfaceContainerHighest,
-                      child:
-                          track.localCoverPath != null &&
-                              track.localCoverPath!.isNotEmpty
-                          ? Image.file(
-                              File(track.localCoverPath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Center(
-                                    child: Icon(
-                                      Icons.music_note,
-                                      color: colorScheme.onSurfaceVariant,
+                        child:
+                            track.localCoverPath != null &&
+                                track.localCoverPath!.isNotEmpty
+                            ? Image.file(
+                                File(track.localCoverPath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(
+                                      child: Icon(
+                                        Icons.music_note,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
+                              )
+                            : (track.coverUrl != null &&
+                                  track.coverUrl!.isNotEmpty)
+                            ? CachedNetworkImage(
+                                imageUrl: track.coverUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                   ),
-                            )
-                          : (track.coverUrl != null &&
-                                track.coverUrl!.isNotEmpty)
-                          ? CachedNetworkImage(
-                              imageUrl: track.coverUrl!,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => Center(
+                                errorWidget: (context, url, error) => Center(
+                                  child: Icon(
+                                    Icons.music_note,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            : Center(
                                 child: Icon(
                                   Icons.music_note,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            )
-                          : Center(
-                              child: Icon(
-                                Icons.music_note,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
+                      ),
                     ),
-                  ),
-                  title: Text(
-                    track.trackName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  subtitle: Text(
-                    track.artistName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: colorScheme.onSurfaceVariant),
-                  ),
-                  onTap: () {
-                    // Sort all tracks in this folder alphabetically
-                    final allTracks = widget.tracks.map(_toTrack).toList();
-                    allTracks.sort(
-                      (a, b) =>
-                          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                    );
+                    title: Text(
+                      track.trackName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Text(
+                      track.artistName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                    onTap: () {
+                      // Sort all tracks in this folder alphabetically
+                      final allTracks = currentTracks.map(_toTrack).toList();
+                      allTracks.sort(
+                        (a, b) => a.name.toLowerCase().compareTo(
+                          b.name.toLowerCase(),
+                        ),
+                      );
 
-                    // Find index of clicked track
-                    final startIndex = allTracks.indexWhere(
-                      (t) => t.id == track.id,
-                    );
+                      // Find index of clicked track
+                      final startIndex = allTracks.indexWhere(
+                        (t) => t.id == track.id,
+                      );
 
-                    ref
-                        .read(playbackProvider.notifier)
-                        .playTrackList(
-                          allTracks,
-                          startIndex: startIndex >= 0 ? startIndex : 0,
-                        );
-                  },
-                );
-              }, childCount: _entries.length),
+                      ref
+                          .read(playbackProvider.notifier)
+                          .playTrackList(
+                            allTracks,
+                            startIndex: startIndex >= 0 ? startIndex : 0,
+                          );
+                    },
+                  );
+                }, childCount: _entries.length),
+              ),
             ),
-          ),
         ],
       ),
     );

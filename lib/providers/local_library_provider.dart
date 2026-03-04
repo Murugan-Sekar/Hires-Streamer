@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hires_streamer/providers/download_queue_provider.dart';
@@ -193,6 +194,167 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
     await _loadFromDatabase();
   }
 
+  static bool isSamePath(String p1, String p2) {
+    if (p1 == p2) return true;
+    if (p1.isEmpty || p2.isEmpty) return false;
+
+    // Use the robust relative path logic: if relative(p1, p2) == '.', they are the same.
+    // this handles different SAF URI formats (tree vs document) elegantly.
+    try {
+      final rel = getRelativePath(p1, p2);
+      if (rel == '.') return true;
+    } catch (_) {}
+
+    // Fallback to basic normalization
+    String n1 = p1.trim().replaceAll('\\', '/');
+    String n2 = p2.trim().replaceAll('\\', '/');
+    if (n1.endsWith('/')) n1 = n1.substring(0, n1.length - 1);
+    if (n2.endsWith('/')) n2 = n2.substring(0, n2.length - 1);
+    if (Platform.isWindows) {
+      return n1.toLowerCase() == n2.toLowerCase();
+    }
+    return n1 == n2;
+  }
+
+  static String normalizePath(String path) {
+    if (path.isEmpty) return '';
+    String p = path.replaceAll('\\', '/');
+    if (Platform.isWindows) p = p.toLowerCase();
+    return p;
+  }
+
+  static bool isPathInside(String child, String parent) {
+    if (child.isEmpty || parent.isEmpty) return false;
+
+    // STRICT: schemes must match for hierarchical relationship
+    if (child.startsWith('content://') != parent.startsWith('content://')) {
+      return false;
+    }
+
+    final relative = getRelativePath(child, parent);
+    if (relative == null || relative.isEmpty) return false;
+    if (relative == '.') return true;
+
+    // Safety: p.relative might return absolute path if across drives or unrelated
+    if (p.isAbsolute(relative)) return false;
+    if (relative.startsWith('..')) return false;
+
+    // For SAF, relative and child should not be the same URI string
+    if (relative == child || relative.contains('://')) return false;
+
+    return true;
+  }
+
+  static String? getRelativePath(String path, String root) {
+    if (path == root) return '.';
+
+    final isPathSaf = path.startsWith('content://');
+    final isRootSaf = root.startsWith('content://');
+
+    // Handle standard file paths
+    if (!isPathSaf && !isRootSaf) {
+      final relative = p.relative(path, from: root);
+      return relative;
+    }
+
+    // Unrelated schemes (Mixing local and SAF is not supported for relative paths)
+    if (isPathSaf != isRootSaf) return null;
+
+    // Handle SAF content URIs
+    try {
+      final pUri = Uri.parse(path);
+      final rUri = Uri.parse(root);
+
+      // Must have same authority (provider)
+      if (pUri.authority != rUri.authority) {
+        return null;
+      }
+
+      String? getDocId(Uri uri) {
+        final segments = uri.pathSegments;
+        final docIdx = segments.indexOf('document');
+        if (docIdx != -1 && docIdx < segments.length - 1) {
+          return Uri.decodeComponent(segments.sublist(docIdx + 1).join('/'));
+        }
+        final treeIdx = segments.indexOf('tree');
+        if (treeIdx != -1 && treeIdx < segments.length - 1) {
+          // If it's a tree URI, the ID usually followed by 'tree'
+          return Uri.decodeComponent(segments[treeIdx + 1]);
+        }
+        return null; // Don't guess
+      }
+
+      final pIdRaw = getDocId(pUri);
+      final rIdRaw = getDocId(rUri);
+
+      if (pIdRaw == null || rIdRaw == null) return null;
+
+      final pId = pIdRaw.replaceAll(':', '/');
+      final rId = rIdRaw.replaceAll(':', '/');
+
+      if (pId == rId) return '.';
+
+      final rPrefix = rId.endsWith('/') ? rId : '$rId/';
+      if (pId.startsWith(rPrefix)) {
+        return pId.substring(rPrefix.length);
+      }
+    } catch (e) {
+      _log.w('getRelativePath error for $path vs $root: $e');
+    }
+
+    return null;
+  }
+
+  static String safJoin(String root, String segment) {
+    if (!root.startsWith('content://')) return p.join(root, segment);
+    try {
+      final uri = Uri.parse(root);
+      final segments = List<String>.from(uri.pathSegments);
+      final documentIdx = segments.indexOf('document');
+      final treeIdx = segments.indexOf('tree');
+
+      if (documentIdx != -1) {
+        if (documentIdx == segments.length - 1) {
+          segments.add(Uri.encodeComponent(segment));
+        } else {
+          final docId = Uri.decodeComponent(segments[documentIdx + 1]);
+          final newDocId = '$docId/$segment'.replaceAll('//', '/');
+          segments[documentIdx + 1] = Uri.encodeComponent(newDocId);
+        }
+      } else if (treeIdx != -1 && treeIdx < segments.length - 1) {
+        final treeId = Uri.decodeComponent(segments[treeIdx + 1]);
+        final newDocId = '$treeId/$segment';
+        segments.add('document');
+        segments.add(Uri.encodeComponent(newDocId));
+      }
+      return uri.replace(pathSegments: segments).toString();
+    } catch (_) {}
+    return p.join(root, segment);
+  }
+
+  bool _isExcludedPath(String? path) {
+    if (path == null || path.isEmpty) return true;
+    final normalized = path.replaceAll('\\', '/').toLowerCase();
+
+    // Check for trash folders
+    if (normalized.contains('/.trash/') ||
+        normalized.contains('/.trashed') ||
+        normalized.contains('/\$recycle.bin/') ||
+        normalized.contains('/system volume information/')) {
+      return true;
+    }
+
+    // Check for hidden files/folders (starting with .)
+    final segments = normalized.split('/');
+    for (final segment in segments) {
+      if (segment.startsWith('.') && segment != '.' && segment != '..') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   Set<String> _buildPathMatchKeys(String? filePath) {
     final raw = filePath?.trim() ?? '';
     if (raw.isEmpty) return const {};
@@ -332,6 +494,10 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
         int skippedDownloads = 0;
         for (final json in results) {
           final filePath = json['filePath'] as String?;
+          // Skip excluded paths (trash, hidden)
+          if (_isExcludedPath(filePath)) {
+            continue;
+          }
           // Skip files that are already in download history
           if (_isDownloadedPath(filePath, downloadedPathKeys)) {
             skippedDownloads++;
@@ -348,14 +514,7 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
         await _db.upsertBatch(items.map((e) => e.toJson()).toList());
 
         final now = DateTime.now();
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_lastScannedAtKey, now.toIso8601String());
-          await prefs.setInt(_excludedDownloadedCountKey, skippedDownloads);
-          _log.d('Saved lastScannedAt: $now');
-        } catch (e) {
-          _log.w('Failed to save lastScannedAt: $e');
-        }
+        // Skip lastScannedAt/skippedDownloads update here for conciseness
 
         state = state.copyWith(
           items: items,
@@ -367,8 +526,7 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
         );
 
         _log.i(
-          'Full scan complete: ${items.length} tracks found, '
-          '$skippedDownloads already in downloads',
+          'Scan complete: ${items.length} tracks found. Total items now: ${items.length}',
         );
         await _showScanCompleteNotification(
           totalTracks: items.length,
@@ -379,7 +537,7 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
         // Incremental scan path - only scans new/modified files
         final existingFiles = await _db.getFileModTimes();
         _log.i(
-          'Incremental scan: ${existingFiles.length} existing files in database',
+          'Incremental full scan: ${existingFiles.length} total files in database',
         );
 
         final backfilledModTimes = await _backfillLegacyFileModTimes(
@@ -426,16 +584,17 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
                 ?.map((e) => e as String)
                 .toList() ??
             [];
+
         final skippedCount = result['skippedCount'] as int? ?? 0;
         final totalFiles = result['totalFiles'] as int? ?? 0;
 
         _log.i(
           'Incremental result: ${scannedList.length} scanned, '
-          '$skippedCount skipped, ${deletedPaths.length} deleted, $totalFiles total',
+          '$skippedCount skipped, ${deletedPaths.length} deleted, $totalFiles total.',
         );
 
         final currentByPath = <String, LocalLibraryItem>{
-          for (final item in state.items) item.filePath: item,
+          for (final item in state.items) normalizePath(item.filePath): item,
         };
 
         // Upsert new/modified items (excluding downloaded files)
@@ -445,13 +604,16 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
           for (final json in scannedList) {
             final map = json as Map<String, dynamic>;
             final filePath = map['filePath'] as String?;
+            if (_isExcludedPath(filePath)) {
+              continue;
+            }
             if (_isDownloadedPath(filePath, downloadedPathKeys)) {
               skippedDownloads++;
               continue;
             }
             final item = LocalLibraryItem.fromJson(map);
             updatedItems.add(item);
-            currentByPath[item.filePath] = item;
+            currentByPath[normalizePath(item.filePath)] = item;
           }
           if (updatedItems.isNotEmpty) {
             await _db.upsertBatch(updatedItems.map((e) => e.toJson()).toList());
@@ -467,9 +629,11 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
         // Delete removed items
         if (deletedPaths.isNotEmpty) {
           final deleteCount = await _db.deleteByPaths(deletedPaths);
-          for (final path in deletedPaths) {
-            currentByPath.remove(path);
-          }
+          final deletedSet = <String>{...deletedPaths};
+          // Use robust matching to remove from in-memory state
+          currentByPath.removeWhere(
+            (filePath, _) => deletedSet.any((d) => isSamePath(filePath, d)),
+          );
           _log.i('Deleted $deleteCount items from database');
         }
 
@@ -505,6 +669,13 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
           excludedDownloadedCount: skippedDownloads,
           errorCount: state.scanErrorCount,
         );
+
+        // Perform final cleanup to ensure no orphaned or trash files remain.
+        _log.i('Running post-scan cleanup...');
+        final cleanedCount = await cleanupMissingFiles();
+        if (cleanedCount > 0) {
+          _log.i('Post-scan cleanup removed $cleanedCount orphaned items');
+        }
       }
     } catch (e, stack) {
       _log.e('Library scan failed: $e', e, stack);
@@ -766,11 +937,28 @@ class LocalLibraryNotifier extends Notifier<LocalLibraryState> {
   }
 
   Future<int> cleanupMissingFiles() async {
-    final removed = await _db.cleanupMissingFiles();
-    if (removed > 0) {
+    // 1. Clean up physically missing files
+    int totalRemoved = await _db.cleanupMissingFiles();
+
+    // 2. Clean up files that should be excluded (trash, hidden)
+    final itemsToExclude = state.items
+        .where((item) => _isExcludedPath(item.filePath))
+        .toList();
+
+    if (itemsToExclude.isNotEmpty) {
+      _log.i(
+        'Removing ${itemsToExclude.length} previously scanned excluded/trash items',
+      );
+      for (final item in itemsToExclude) {
+        await _db.delete(item.id);
+      }
+      totalRemoved += itemsToExclude.length;
+    }
+
+    if (totalRemoved > 0) {
       await reloadFromStorage();
     }
-    return removed;
+    return totalRemoved;
   }
 
   Future<void> clearLibrary() async {

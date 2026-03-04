@@ -31,6 +31,7 @@ import 'package:hires_streamer/screens/library_tracks_folder_screen.dart';
 import 'package:hires_streamer/screens/local_album_screen.dart';
 import 'package:hires_streamer/screens/unified_folder_screen.dart';
 import 'package:hires_streamer/utils/clickable_metadata.dart';
+// import 'package:hires_streamer/widgets/sync_rotation_icon.dart'; // removed
 
 enum LibraryItemSource { downloaded, local }
 
@@ -2175,10 +2176,14 @@ class _QueueTabState extends ConsumerState<QueueTab> {
       }
     }
 
-    // Build grouped local albums
+    // Build grouped local albums with deduplication
     final groupedLocalAlbums = <_GroupedLocalAlbum>[];
-    localAlbumMap.forEach((_, tracks) {
+    localAlbumMap.forEach((key, tracks) {
       if (tracks.length <= 1) return;
+
+      // If this album is already in the downloaded album map, skip it
+      if (albumMap.containsKey(key)) return;
+
       tracks.sort((a, b) {
         final aNum = a.trackNumber ?? 999;
         final bNum = b.trackNumber ?? 999;
@@ -2271,82 +2276,6 @@ class _QueueTabState extends ConsumerState<QueueTab> {
       allUnifiedTracks.add(UnifiedLibraryItem.fromLocalLibrary(item));
     }
 
-    String safGetRelative(String path, String root) {
-      if (path == root) return '.';
-      if (!path.startsWith('content://')) {
-        return p.relative(path, from: root);
-      }
-
-      try {
-        final pathUri = Uri.parse(path);
-        final rootUri = Uri.parse(root);
-
-        final pathSegments = pathUri.pathSegments;
-        final documentIdx = pathSegments.indexOf('document');
-        if (documentIdx == -1 || documentIdx == pathSegments.length - 1) {
-          return p.relative(path, from: root);
-        }
-
-        final fullDocId = Uri.decodeComponent(
-          pathSegments.sublist(documentIdx + 1).join('/'),
-        ).replaceAll(':', '/');
-
-        // Extract root doc ID. Prefer document ID over tree ID if both exist.
-        String rootDocId = '';
-        final rootSegments = rootUri.pathSegments;
-        final rootDocIdx = rootSegments.indexOf('document');
-        final rootTreeIdx = rootSegments.indexOf('tree');
-
-        if (rootDocIdx != -1 && rootDocIdx < rootSegments.length - 1) {
-          rootDocId = Uri.decodeComponent(
-            rootSegments.sublist(rootDocIdx + 1).join('/'),
-          );
-        } else if (rootTreeIdx != -1 && rootTreeIdx < rootSegments.length - 1) {
-          rootDocId = Uri.decodeComponent(rootSegments[rootTreeIdx + 1]);
-        }
-        rootDocId = rootDocId.replaceAll(':', '/');
-
-        if (fullDocId == rootDocId) return '.';
-        if (fullDocId.startsWith('$rootDocId/')) {
-          return fullDocId.substring(rootDocId.length + 1);
-        } else if (fullDocId.startsWith(rootDocId)) {
-          var relative = fullDocId.substring(rootDocId.length);
-          if (relative.startsWith('/')) relative = relative.substring(1);
-          return relative.isEmpty ? '.' : relative;
-        }
-      } catch (_) {}
-
-      return p.relative(path, from: root);
-    }
-
-    String safJoin(String root, String segment) {
-      if (!root.startsWith('content://')) return p.join(root, segment);
-      try {
-        final uri = Uri.parse(root);
-        final segments = List<String>.from(uri.pathSegments);
-        final documentIdx = segments.indexOf('document');
-        final treeIdx = segments.indexOf('tree');
-
-        if (documentIdx != -1) {
-          if (documentIdx == segments.length - 1) {
-            segments.add(Uri.encodeComponent(segment));
-          } else {
-            final docId = Uri.decodeComponent(segments[documentIdx + 1]);
-            final newDocId = '$docId/$segment'.replaceAll('//', '/');
-            segments[documentIdx + 1] = Uri.encodeComponent(newDocId);
-          }
-        } else if (treeIdx != -1 && treeIdx < segments.length - 1) {
-          // Transition from tree root to document subpath
-          final treeId = Uri.decodeComponent(segments[treeIdx + 1]);
-          final newDocId = '$treeId/$segment';
-          segments.add('document');
-          segments.add(Uri.encodeComponent(newDocId));
-        }
-        return uri.replace(pathSegments: segments).toString();
-      } catch (_) {}
-      return p.join(root, segment);
-    }
-
     String discoverSmartRoot(String basePath, Iterable<String> paths) {
       if (basePath.isEmpty || paths.isEmpty) return basePath;
       String currentRoot = basePath;
@@ -2354,10 +2283,14 @@ class _QueueTabState extends ConsumerState<QueueTab> {
         final children = <String>{};
         bool hasDirectFile = false;
         for (final path in paths) {
-          if (!path.startsWith(currentRoot)) continue;
+          if (!LocalLibraryNotifier.isPathInside(path, currentRoot)) continue;
           try {
-            final relative = safGetRelative(path, currentRoot);
-            if (relative == '.' || relative.isEmpty) continue;
+            final relative = LocalLibraryNotifier.getRelativePath(
+              path,
+              currentRoot,
+            );
+            if (relative == null || relative == '.' || relative.isEmpty)
+              continue;
             final parts = p.split(relative);
             if (parts.length == 1) {
               hasDirectFile = true;
@@ -2370,7 +2303,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
         // If we have branching or files, this is our root.
         // Special case: don't let "document" be the only child if we can help it
         if (hasDirectFile || children.length != 1) break;
-        currentRoot = safJoin(currentRoot, children.first);
+        currentRoot = LocalLibraryNotifier.safJoin(currentRoot, children.first);
       }
       return currentRoot;
     }
@@ -2395,7 +2328,11 @@ class _QueueTabState extends ConsumerState<QueueTab> {
 
       if (root != null) {
         try {
-          final relative = safGetRelative(item.filePath, root);
+          final relative = LocalLibraryNotifier.getRelativePath(
+            item.filePath,
+            root,
+          );
+          if (relative == null) continue;
           final parts = p.split(relative);
           if (parts.length == 1 && relative != '.') {
             // It's a track in the root
@@ -2412,9 +2349,12 @@ class _QueueTabState extends ConsumerState<QueueTab> {
 
             final folderName = parts[0];
             // Skip generic names that don't represent real folders
-            if (folderName == 'document' || folderName == 'primary') continue;
+            if (folderName == 'document' ||
+                folderName == 'primary' ||
+                folderName == 'tree')
+              continue;
 
-            final folderPath = safJoin(root, folderName);
+            final folderPath = LocalLibraryNotifier.safJoin(root, folderName);
             if (rootEntriesMap.containsKey(folderPath)) {
               rootEntriesMap[folderPath]!.allDescendantTracks.add(item);
             } else {
@@ -2888,6 +2828,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                       );
                     },
                   ),
+                  actions: [],
                 ),
 
                 // Search bar - always at top
@@ -3079,7 +3020,30 @@ class _QueueTabState extends ConsumerState<QueueTab> {
         .map((item) => UnifiedLibraryItem.fromLocalLibrary(item))
         .toList(growable: false);
 
-    final merged = <UnifiedLibraryItem>[...unifiedDownloaded, ...unifiedLocal]
+    // Deduplicate by filePath: prefer downloaded items over local ones
+    String normalizePath(String path) {
+      if (path.isEmpty) return '';
+      String p = path.replaceAll('\\', '/');
+      if (Platform.isWindows) p = p.toLowerCase();
+      return p;
+    }
+
+    final Map<String, UnifiedLibraryItem> deduplicated = {};
+    for (final item in unifiedDownloaded) {
+      if (item.filePath.isNotEmpty) {
+        deduplicated[normalizePath(item.filePath)] = item;
+      }
+    }
+    for (final item in unifiedLocal) {
+      if (item.filePath.isNotEmpty) {
+        final key = normalizePath(item.filePath);
+        if (!deduplicated.containsKey(key)) {
+          deduplicated[key] = item;
+        }
+      }
+    }
+
+    final merged = deduplicated.values.toList()
       ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
 
     _unifiedItemsCache[filterMode] = _UnifiedCacheEntry(
@@ -4359,11 +4323,8 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UnifiedFolderScreen(
-          folderName: entry.name,
-          folderPath: entry.path,
-          tracks: entry.allDescendantTracks,
-        ),
+        builder: (context) =>
+            UnifiedFolderScreen(folderName: entry.name, folderPath: entry.path),
       ),
     );
   }

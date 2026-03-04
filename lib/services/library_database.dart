@@ -422,9 +422,20 @@ class LibraryDatabase {
     await db.delete('library', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<int> cleanupMissingFiles() async {
+  Future<int> cleanupMissingFiles({
+    bool Function(String filePath)? filter,
+  }) async {
     final db = await database;
-    final rows = await db.query('library', columns: ['id', 'file_path']);
+
+    final allRows = await db.query('library', columns: ['id', 'file_path']);
+    final List<Map<String, dynamic>> rows;
+    if (filter != null) {
+      rows = allRows
+          .where((row) => filter(row['file_path'] as String))
+          .toList();
+    } else {
+      rows = allRows;
+    }
 
     final missingIds = <String>[];
     const checkChunkSize = 16;
