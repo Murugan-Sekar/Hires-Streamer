@@ -1,8 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:spotiflac_android/utils/logger.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
+import 'package:hires_streamer/utils/logger.dart';
+import 'package:hires_streamer/utils/file_access.dart';
 
 final _log = AppLogger('LibraryDatabase');
 

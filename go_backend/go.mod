@@ -1,4 +1,4 @@
-module github.com/zarz/spotiflac_android/go_backend
+module github.com/zarz/hires_streamer/go_backend
 
 go 1.25.0
 

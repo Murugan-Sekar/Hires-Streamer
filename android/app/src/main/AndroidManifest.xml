@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.zarz.spotiflac">
+    package="com.peter.hiresstreamer">
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
-        android:label="SpotiFLAC"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"

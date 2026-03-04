@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
 
 class CachedCoverImage extends StatelessWidget {
   final String imageUrl;
@@ -35,18 +35,15 @@ class CachedCoverImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
-      cacheManager: CoverCacheManager.isInitialized 
-          ? CoverCacheManager.instance 
+      cacheManager: CoverCacheManager.isInitialized
+          ? CoverCacheManager.instance
           : null,
       errorWidget: errorWidget,
       placeholder: placeholder,
     );
 
     if (borderRadius != null) {
-      return ClipRRect(
-        borderRadius: borderRadius!,
-        child: image,
-      );
+      return ClipRRect(borderRadius: borderRadius!, child: image);
     }
 
     return image;
@@ -56,8 +53,8 @@ class CachedCoverImage extends StatelessWidget {
 CachedNetworkImageProvider cachedCoverImageProvider(String url) {
   return CachedNetworkImageProvider(
     url,
-    cacheManager: CoverCacheManager.isInitialized 
-        ? CoverCacheManager.instance 
+    cacheManager: CoverCacheManager.isInitialized
+        ? CoverCacheManager.instance
         : null,
   );
 }

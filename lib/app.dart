@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spotiflac_android/screens/main_shell.dart';
-import 'package:spotiflac_android/screens/setup_screen.dart';
-import 'package:spotiflac_android/screens/tutorial_screen.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/theme/dynamic_color_wrapper.dart';
-import 'package:spotiflac_android/l10n/app_localizations.dart';
+import 'package:hires_streamer/screens/main_shell.dart';
+import 'package:hires_streamer/screens/setup_screen.dart';
+import 'package:hires_streamer/screens/tutorial_screen.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/theme/dynamic_color_wrapper.dart';
+import 'package:hires_streamer/l10n/app_localizations.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final isFirstLaunch = ref.watch(
@@ -43,10 +43,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class SpotiFLACApp extends ConsumerWidget {
+class HiResStreamerApp extends ConsumerWidget {
   final bool disableOverscrollEffects;
 
-  const SpotiFLACApp({super.key, this.disableOverscrollEffects = false});
+  const HiResStreamerApp({super.key, this.disableOverscrollEffects = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,7 +73,7 @@ class SpotiFLACApp extends ConsumerWidget {
     return DynamicColorWrapper(
       builder: (lightTheme, darkTheme, themeMode) {
         return MaterialApp.router(
-          title: 'SpotiFLAC',
+          title: 'Hi-Res Streamer',
           debugShowCheckedModeBanner: false,
           theme: lightTheme,
           darkTheme: darkTheme,

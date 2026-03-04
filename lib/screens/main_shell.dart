@@ -5,23 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/providers/download_queue_provider.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/store_provider.dart';
-import 'package:spotiflac_android/providers/track_provider.dart';
-import 'package:spotiflac_android/screens/home_tab.dart';
-import 'package:spotiflac_android/screens/store_tab.dart';
-import 'package:spotiflac_android/screens/queue_tab.dart';
-import 'package:spotiflac_android/screens/settings/settings_tab.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/services/shell_navigation_service.dart';
-import 'package:spotiflac_android/services/share_intent_service.dart';
-import 'package:spotiflac_android/services/update_checker.dart';
-import 'package:spotiflac_android/widgets/update_dialog.dart';
-import 'package:spotiflac_android/widgets/mini_player_bar.dart';
-import 'package:spotiflac_android/utils/logger.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/store_provider.dart';
+import 'package:hires_streamer/providers/track_provider.dart';
+import 'package:hires_streamer/screens/home_tab.dart';
+import 'package:hires_streamer/screens/store_tab.dart';
+import 'package:hires_streamer/screens/queue_tab.dart';
+import 'package:hires_streamer/screens/settings/settings_tab.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/services/shell_navigation_service.dart';
+import 'package:hires_streamer/services/share_intent_service.dart';
+import 'package:hires_streamer/services/update_checker.dart';
+import 'package:hires_streamer/widgets/update_dialog.dart';
+import 'package:hires_streamer/widgets/mini_player_bar.dart';
+import 'package:hires_streamer/utils/logger.dart';
 
 final _log = AppLogger('MainShell');
 
@@ -172,7 +172,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'SpotiFLAC now uses Android Storage Access Framework (SAF) for downloads. '
+              'HiResStreamer now uses Android Storage Access Framework (SAF) for downloads. '
               'This fixes "permission denied" errors on Android 10+.',
             ),
             SizedBox(height: 12),

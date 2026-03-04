@@ -11,7 +11,7 @@ GO_BACKEND_DIR="$PROJECT_DIR/go_backend"
 IOS_DIR="$PROJECT_DIR/ios"
 OUTPUT_DIR="$IOS_DIR/Frameworks"
 
-echo "=== SpotiFLAC iOS Build Script ==="
+echo "=== HiResStreamer iOS Build Script ==="
 echo "Project directory: $PROJECT_DIR"
 echo "Go backend directory: $GO_BACKEND_DIR"
 echo "Output directory: $OUTPUT_DIR"

@@ -1,7 +1,7 @@
 {
   "@@locale": "zh",
   "@@last_modified": "2026-01-16",
-  "appName": "SpotiFLAC",
+  "appName": "HiResStreamer",
   "@appName": {
     "description": "App name - DO NOT TRANSLATE"
   },
@@ -504,7 +504,7 @@
   "@aboutMobileDeveloper": {
     "description": "Role description for mobile dev"
   },
-  "aboutOriginalCreator": "Creator of the original SpotiFLAC",
+  "aboutOriginalCreator": "Creator of the original HiResStreamer",
   "@aboutOriginalCreator": {
     "description": "Role description for original creator"
   },
@@ -686,7 +686,7 @@
   "@trackMetadataOpenFolder": {
     "description": "Action button - open containing folder"
   },
-  "setupTitle": "Welcome to SpotiFLAC",
+  "setupTitle": "Welcome to HiResStreamer",
   "@setupTitle": {
     "description": "Setup wizard title"
   },
@@ -734,7 +734,7 @@
   "@setupStorageAccessRequired": {
     "description": "Title when storage access needed"
   },
-  "setupStorageAccessMessage": "SpotiFLAC needs \"All files access\" permission to save music files to your chosen folder.",
+  "setupStorageAccessMessage": "HiResStreamer needs \"All files access\" permission to save music files to your chosen folder.",
   "@setupStorageAccessMessage": {
     "description": "Explanation for storage access"
   },
@@ -845,7 +845,7 @@
   "@setupStorageRequired": {
     "description": "Title when storage permission needed"
   },
-  "setupStorageDescription": "SpotiFLAC needs storage permission to save your downloaded music files.",
+  "setupStorageDescription": "HiResStreamer needs storage permission to save your downloaded music files.",
   "@setupStorageDescription": {
     "description": "Explanation for storage permission"
   },
@@ -1196,7 +1196,7 @@
   "@snackbarFileNotFound": {
     "description": "Snackbar - file doesn't exist"
   },
-  "snackbarSelectExtFile": "Please select a .spotiflac-ext file",
+  "snackbarSelectExtFile": "Please select a .HiResStreamer-ext file",
   "@snackbarSelectExtFile": {
     "description": "Snackbar - wrong file type selected"
   },
@@ -2234,7 +2234,7 @@
   "@extensionsNoExtensions": {
     "description": "Empty state - no extensions"
   },
-  "extensionsNoExtensionsSubtitle": "Install .spotiflac-ext files to add new providers",
+  "extensionsNoExtensionsSubtitle": "Install .HiResStreamer-ext files to add new providers",
   "@extensionsNoExtensionsSubtitle": {
     "description": "Empty state subtitle"
   },
@@ -2567,7 +2567,7 @@
     "description": "Extension capability - utility functions"
   },
   "setupModeSelectionTitle": "选择您的模式",
-  "setupModeSelectionDescription": "您想如何使用 SpotiFLAC？您可以稍后在设置中随时更改。",
+  "setupModeSelectionDescription": "您想如何使用 HiResStreamer？您可以稍后在设置中随时更改。",
   "setupModeDownloaderTitle": "下载器",
   "setupModeDownloaderFeature1": "以无损 FLAC 品质下载曲目",
   "setupModeDownloaderFeature2": "将音乐保存到设备以供离线收听",

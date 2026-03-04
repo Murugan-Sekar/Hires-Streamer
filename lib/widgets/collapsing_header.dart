@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
 
 /// A collapsing header widget
 /// Title collapses from large to small when scrolling
@@ -39,7 +39,10 @@ class CollapsingHeader extends StatelessWidget {
           automaticallyImplyLeading: false,
           flexibleSpace: LayoutBuilder(
             builder: (context, constraints) {
-              final expandRatio = _calculateExpandRatio(constraints, topPadding);
+              final expandRatio = _calculateExpandRatio(
+                constraints,
+                topPadding,
+              );
               final animation = AlwaysStoppedAnimation(expandRatio);
 
               return FlexibleSpaceBar(
@@ -48,13 +51,22 @@ class CollapsingHeader extends StatelessWidget {
                 title: Container(
                   alignment: Alignment.bottomLeft,
                   padding: EdgeInsets.only(
-                    left: Tween<double>(begin: showBackButton ? 56 : 24, end: 24).evaluate(animation),
-                    bottom: Tween<double>(begin: 16, end: 24).evaluate(animation),
+                    left: Tween<double>(
+                      begin: showBackButton ? 56 : 24,
+                      end: 24,
+                    ).evaluate(animation),
+                    bottom: Tween<double>(
+                      begin: 16,
+                      end: 24,
+                    ).evaluate(animation),
                   ),
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: Tween<double>(begin: 20, end: 28).evaluate(animation),
+                      fontSize: Tween<double>(
+                        begin: 20,
+                        end: 28,
+                      ).evaluate(animation),
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
                     ),
@@ -142,8 +154,12 @@ class InfoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: Theme.of(context).textTheme.bodyLarge),
-                  Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant)),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ],

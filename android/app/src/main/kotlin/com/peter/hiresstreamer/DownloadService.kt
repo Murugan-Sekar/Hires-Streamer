@@ -1,4 +1,4 @@
-package com.zarz.spotiflac
+package com.peter.hiresstreamer
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -24,11 +24,11 @@ class DownloadService : Service() {
     companion object {
         private const val CHANNEL_ID = "download_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val WAKELOCK_TAG = "SpotiFLAC:DownloadWakeLock"
+        private const val WAKELOCK_TAG = "HiResStreamer:DownloadWakeLock"
         
-        const val ACTION_START = "com.zarz.spotiflac.action.START_DOWNLOAD"
-        const val ACTION_STOP = "com.zarz.spotiflac.action.STOP_DOWNLOAD"
-        const val ACTION_UPDATE_PROGRESS = "com.zarz.spotiflac.action.UPDATE_PROGRESS"
+        const val ACTION_START = "com.peter.hiresstreamer.action.START_DOWNLOAD"
+        const val ACTION_STOP = "com.peter.hiresstreamer.action.STOP_DOWNLOAD"
+        const val ACTION_UPDATE_PROGRESS = "com.peter.hiresstreamer.action.UPDATE_PROGRESS"
         
         const val EXTRA_TRACK_NAME = "track_name"
         const val EXTRA_ARTIST_NAME = "artist_name"

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:spotiflac_android/constants/app_info.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/widgets/donate_icons.dart';
+import 'package:hires_streamer/constants/app_info.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/widgets/donate_icons.dart';
 
 class DonatePage extends StatelessWidget {
   const DonatePage({super.key});
@@ -460,9 +460,12 @@ class _CryptoWalletItem extends StatelessWidget {
 
 int _cr(String v) {
   int r = 0x1F;
-  for (final c in v.codeUnits) { r = (r * 31 + c) & 0x7FFFFFFF; }
+  for (final c in v.codeUnits) {
+    r = (r * 31 + c) & 0x7FFFFFFF;
+  }
   return r;
 }
+
 // Highlighted supporters (hashes of names): Julian, J, NinoBrown, @nino_sandzak, IMJ.
 const _cv = {1825257268, 1035, 1497948283, 398058782, 996135};
 
@@ -479,16 +482,10 @@ class _SupporterChip extends StatelessWidget {
     const goldAccentColor = Color(0xFFB8860B);
     const goldDarkChipColor = Color(0xFF3A3000);
 
-    final chipColor = e
-        ? goldChipColor
-        : colorScheme.secondaryContainer;
-    final accentColor = e
-        ? goldAccentColor
-        : colorScheme.primary;
+    final chipColor = e ? goldChipColor : colorScheme.secondaryContainer;
+    final accentColor = e ? goldAccentColor : colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveChipColor = e && isDark
-        ? goldDarkChipColor
-        : chipColor;
+    final effectiveChipColor = e && isDark ? goldDarkChipColor : chipColor;
 
     return Material(
       color: effectiveChipColor,
@@ -525,9 +522,7 @@ class _SupporterChip extends StatelessWidget {
             Text(
               name,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: e
-                    ? accentColor
-                    : colorScheme.onSecondaryContainer,
+                color: e ? accentColor : colorScheme.onSecondaryContainer,
                 fontWeight: e ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
 
 class ProviderPriorityPage extends ConsumerStatefulWidget {
   const ProviderPriorityPage({super.key});

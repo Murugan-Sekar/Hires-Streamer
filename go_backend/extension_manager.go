@@ -95,8 +95,8 @@ func (m *ExtensionManager) SetDirectories(extensionsDir, dataDir string) error {
 }
 
 func (m *ExtensionManager) LoadExtensionFromFile(filePath string) (*LoadedExtension, error) {
-	if !strings.HasSuffix(strings.ToLower(filePath), ".spotiflac-ext") {
-		return nil, fmt.Errorf("Invalid file format. Please select a .spotiflac-ext file")
+	if !strings.HasSuffix(strings.ToLower(filePath), ".HiResStreamer-ext") {
+		return nil, fmt.Errorf("Invalid file format. Please select a .HiResStreamer-ext file")
 	}
 
 	zipReader, err := zip.OpenReader(filePath)
@@ -377,7 +377,7 @@ func (m *ExtensionManager) LoadExtensionsFromDirectory(dirPath string) ([]string
 					loaded = append(loaded, ext.ID)
 				}
 			}
-		} else if strings.HasSuffix(strings.ToLower(entry.Name()), ".spotiflac-ext") {
+		} else if strings.HasSuffix(strings.ToLower(entry.Name()), ".HiResStreamer-ext") {
 			ext, err := m.LoadExtensionFromFile(filepath.Join(dirPath, entry.Name()))
 			if err != nil {
 				GoLog("[Extension] Failed to load %s: %v\n", entry.Name(), err)
@@ -478,8 +478,8 @@ func (m *ExtensionManager) RemoveExtension(extensionID string) error {
 // Only allows upgrades (new version > current version), not downgrades
 func (m *ExtensionManager) UpgradeExtension(filePath string) (*LoadedExtension, error) {
 	// Validate file extension
-	if !strings.HasSuffix(strings.ToLower(filePath), ".spotiflac-ext") {
-		return nil, fmt.Errorf("Invalid file format. Please select a .spotiflac-ext file")
+	if !strings.HasSuffix(strings.ToLower(filePath), ".HiResStreamer-ext") {
+		return nil, fmt.Errorf("Invalid file format. Please select a .HiResStreamer-ext file")
 	}
 
 	zipReader, err := zip.OpenReader(filePath)
@@ -627,8 +627,8 @@ type ExtensionUpgradeInfo struct {
 
 func (m *ExtensionManager) checkExtensionUpgradeInternal(filePath string) (*ExtensionUpgradeInfo, error) {
 	// Validate file extension
-	if !strings.HasSuffix(strings.ToLower(filePath), ".spotiflac-ext") {
-		return nil, fmt.Errorf("Invalid file format. Please select a .spotiflac-ext file")
+	if !strings.HasSuffix(strings.ToLower(filePath), ".HiResStreamer-ext") {
+		return nil, fmt.Errorf("Invalid file format. Please select a .HiResStreamer-ext file")
 	}
 
 	zipReader, err := zip.OpenReader(filePath)

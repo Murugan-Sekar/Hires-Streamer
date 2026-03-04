@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:spotiflac_android/utils/logger.dart';
+import 'package:hires_streamer/utils/logger.dart';
 
 final _log = AppLogger('ShareIntent');
 
@@ -10,8 +10,9 @@ class ShareIntentService {
   ShareIntentService._internal();
 
   // Spotify patterns
-  static final RegExp _spotifyUriPattern =
-      RegExp(r'spotify:(track|album|playlist|artist):[a-zA-Z0-9]+');
+  static final RegExp _spotifyUriPattern = RegExp(
+    r'spotify:(track|album|playlist|artist):[a-zA-Z0-9]+',
+  );
   static final RegExp _spotifyUrlPattern = RegExp(
     r'https?://open\.spotify\.com/(track|album|playlist|artist)/[a-zA-Z0-9]+(\?[^\s]*)?',
   );
@@ -63,14 +64,14 @@ class ShareIntentService {
     }
   }
 
-  void _handleSharedMedia(List<SharedMediaFile> files, {bool isInitial = false}) {
+  void _handleSharedMedia(
+    List<SharedMediaFile> files, {
+    bool isInitial = false,
+  }) {
     for (final file in files) {
       // Check both path and message - apps may share URL in either field
-      final textsToCheck = [
-        file.path,
-        if (file.message != null) file.message!,
-      ];
-      
+      final textsToCheck = [file.path, if (file.message != null) file.message!];
+
       for (final textToCheck in textsToCheck) {
         final url = _extractMusicUrl(textToCheck);
         if (url != null) {

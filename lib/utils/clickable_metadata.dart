@@ -1,13 +1,13 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/screens/artist_screen.dart';
-import 'package:spotiflac_android/screens/album_screen.dart';
-import 'package:spotiflac_android/screens/home_tab.dart'
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/screens/artist_screen.dart';
+import 'package:hires_streamer/screens/album_screen.dart';
+import 'package:hires_streamer/screens/home_tab.dart'
     show ExtensionArtistScreen, ExtensionAlbumScreen;
-import 'package:spotiflac_android/services/shell_navigation_service.dart';
-import 'package:spotiflac_android/utils/artist_utils.dart';
-import 'package:spotiflac_android/utils/logger.dart';
+import 'package:hires_streamer/services/shell_navigation_service.dart';
+import 'package:hires_streamer/utils/artist_utils.dart';
+import 'package:hires_streamer/utils/logger.dart';
 
 final _log = AppLogger('ClickableMetadata');
 

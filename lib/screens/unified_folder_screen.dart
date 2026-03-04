@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:path/path.dart' as p;
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/playback_provider.dart';
-import 'package:spotiflac_android/screens/queue_tab.dart'; // To use UnifiedLibraryItem
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/playback_provider.dart';
+import 'package:hires_streamer/screens/queue_tab.dart'; // To use UnifiedLibraryItem
 
 class _FolderEntry {
   final String name;

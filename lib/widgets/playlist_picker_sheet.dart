@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/library_collections_provider.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/library_collections_provider.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
 
 Future<void> showAddTrackToPlaylistSheet(
   BuildContext context,
@@ -58,8 +58,9 @@ class _PlaylistPickerSheetContentState
     if (!_initialized) {
       final playlists = ref.read(libraryCollectionsProvider).playlists;
       for (final playlist in playlists) {
-        final alreadyInPlaylist =
-            widget.tracks.every((t) => playlist.containsTrack(t));
+        final alreadyInPlaylist = widget.tracks.every(
+          (t) => playlist.containsTrack(t),
+        );
         if (alreadyInPlaylist) {
           _initialDisabledIds.add(playlist.id);
           _selectedPlaylistIds.add(playlist.id);
@@ -75,8 +76,9 @@ class _PlaylistPickerSheetContentState
     final addedNames = <String>[];
 
     for (final playlistId in idsToAdd) {
-      final playlist =
-          ref.read(libraryCollectionsProvider).playlistById(playlistId);
+      final playlist = ref
+          .read(libraryCollectionsProvider)
+          .playlistById(playlistId);
       if (playlist != null) {
         addedNames.add(playlist.name);
       }
@@ -87,12 +89,11 @@ class _PlaylistPickerSheetContentState
     Navigator.of(context).pop();
 
     if (addedNames.isNotEmpty) {
-      final name =
-          addedNames.length == 1 ? addedNames.first : addedNames.join(', ');
+      final name = addedNames.length == 1
+          ? addedNames.first
+          : addedNames.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.collectionAddedToPlaylist(name)),
-        ),
+        SnackBar(content: Text(context.l10n.collectionAddedToPlaylist(name))),
       );
     }
   }
@@ -143,7 +144,9 @@ class _PlaylistPickerSheetContentState
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(context.l10n.collectionAddedToPlaylist(name.trim())),
+                  content: Text(
+                    context.l10n.collectionAddedToPlaylist(name.trim()),
+                  ),
                 ),
               );
             },
@@ -154,8 +157,8 @@ class _PlaylistPickerSheetContentState
               child: Text(
                 context.l10n.collectionNoPlaylistsYet,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             )
           else
@@ -167,8 +170,12 @@ class _PlaylistPickerSheetContentState
                   itemCount: playlists.length,
                   itemBuilder: (context, index) {
                     final playlist = playlists[index];
-                    final isAlreadyIn = _initialDisabledIds.contains(playlist.id);
-                    final isSelected = _selectedPlaylistIds.contains(playlist.id);
+                    final isAlreadyIn = _initialDisabledIds.contains(
+                      playlist.id,
+                    );
+                    final isSelected = _selectedPlaylistIds.contains(
+                      playlist.id,
+                    );
 
                     return ListTile(
                       leading: _PlaylistPickerThumbnail(

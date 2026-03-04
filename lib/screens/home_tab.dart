@@ -4,30 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/track_provider.dart';
-import 'package:spotiflac_android/providers/download_queue_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/playback_provider.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/providers/recent_access_provider.dart';
-import 'package:spotiflac_android/providers/explore_provider.dart';
-import 'package:spotiflac_android/providers/local_library_provider.dart';
-import 'package:spotiflac_android/screens/track_metadata_screen.dart';
-import 'package:spotiflac_android/screens/album_screen.dart';
-import 'package:spotiflac_android/screens/artist_screen.dart';
-import 'package:spotiflac_android/services/csv_import_service.dart';
-import 'package:spotiflac_android/services/downloaded_embedded_cover_resolver.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
-import 'package:spotiflac_android/screens/playlist_screen.dart';
-import 'package:spotiflac_android/screens/downloaded_album_screen.dart';
-import 'package:spotiflac_android/widgets/download_service_picker.dart';
-import 'package:spotiflac_android/widgets/track_collection_quick_actions.dart';
-import 'package:spotiflac_android/utils/clickable_metadata.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/track_provider.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/playback_provider.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/providers/recent_access_provider.dart';
+import 'package:hires_streamer/providers/explore_provider.dart';
+import 'package:hires_streamer/providers/local_library_provider.dart';
+import 'package:hires_streamer/screens/track_metadata_screen.dart';
+import 'package:hires_streamer/screens/album_screen.dart';
+import 'package:hires_streamer/screens/artist_screen.dart';
+import 'package:hires_streamer/services/csv_import_service.dart';
+import 'package:hires_streamer/services/downloaded_embedded_cover_resolver.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/utils/file_access.dart';
+import 'package:hires_streamer/screens/playlist_screen.dart';
+import 'package:hires_streamer/screens/downloaded_album_screen.dart';
+import 'package:hires_streamer/widgets/download_service_picker.dart';
+import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
+import 'package:hires_streamer/utils/clickable_metadata.dart';
 
 class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key});
@@ -1087,7 +1087,7 @@ class _HomeTabState extends ConsumerState<HomeTab>
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'SpotiFLAC',
+                              'Hi-Res Streamer',
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),

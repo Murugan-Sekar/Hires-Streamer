@@ -2,8 +2,8 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/file_access.dart';
 
 class _EmbeddedCoverCacheEntry {
   final String previewPath;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/l10n/supported_locales.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/theme_provider.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/widgets/settings_group.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/l10n/supported_locales.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/theme_provider.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/widgets/settings_group.dart';
 
 class AppearanceSettingsPage extends ConsumerWidget {
   const AppearanceSettingsPage({super.key});

@@ -5,9 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/logger.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/logger.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
 
 final _log = AppLogger('ExtensionProvider');
 
@@ -687,7 +687,7 @@ class ExtensionNotifier extends Notifier<ExtensionState> {
 
         final tempRoot = await getTemporaryDirectory();
         final installDir = await Directory(
-          '${tempRoot.path}/spotiflac_bootstrap_spotify_web',
+          '${tempRoot.path}/HiResStreamer_bootstrap_spotify_web',
         ).create(recursive: true);
 
         final downloadPath = await PlatformBridge.downloadStoreExtension(

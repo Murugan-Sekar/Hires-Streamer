@@ -1,4 +1,4 @@
-package com.zarz.spotiflac
+package com.peter.hiresstreamer
 
 import android.app.Activity
 import android.content.Intent
@@ -33,11 +33,11 @@ import java.io.FileOutputStream
 import java.util.Locale
 
 class MainActivity: AudioServiceFragmentActivity() {
-    private val CHANNEL = "com.zarz.spotiflac/backend"
+    private val CHANNEL = "com.peter.hiresstreamer/backend"
     private val DOWNLOAD_PROGRESS_STREAM_CHANNEL =
-        "com.zarz.spotiflac/download_progress_stream"
+        "com.peter.hiresstreamer/download_progress_stream"
     private val LIBRARY_SCAN_PROGRESS_STREAM_CHANNEL =
-        "com.zarz.spotiflac/library_scan_progress_stream"
+        "com.peter.hiresstreamer/library_scan_progress_stream"
     private val STREAM_POLLING_INTERVAL_MS = 800L
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pendingSafTreeResult: MethodChannel.Result? = null
@@ -74,7 +74,7 @@ class MainActivity: AudioServiceFragmentActivity() {
         try {
             contentResolver.takePersistableUriPermission(uri, takeFlags)
         } catch (e: Exception) {
-            android.util.Log.w("SpotiFLAC", "Failed to persist SAF permission: ${e.message}")
+            android.util.Log.w("HiResStreamer", "Failed to persist SAF permission: ${e.message}")
         }
 
         val payload = JSONObject()
@@ -105,7 +105,7 @@ class MainActivity: AudioServiceFragmentActivity() {
 
             return if (subPath.isEmpty()) prefix else "$prefix/$subPath"
         } catch (e: Exception) {
-            android.util.Log.w("SpotiFLAC", "Failed to resolve SAF display path: ${e.message}")
+            android.util.Log.w("HiResStreamer", "Failed to resolve SAF display path: ${e.message}")
             return treeUri.toString()
         }
     }
@@ -167,7 +167,7 @@ class MainActivity: AudioServiceFragmentActivity() {
             // 1. Check for explicitly problematic device models
             for (problematicModel in PROBLEMATIC_MODELS) {
                 if (model.contains(problematicModel) || device.contains(problematicModel)) {
-                    android.util.Log.i("SpotiFLAC", "Matched problematic model: $problematicModel")
+                    android.util.Log.i("HiResStreamer", "Matched problematic model: $problematicModel")
                     return true
                 }
             }
@@ -175,7 +175,7 @@ class MainActivity: AudioServiceFragmentActivity() {
             // 2. Check for problematic chipsets
             for (chipset in PROBLEMATIC_CHIPSETS) {
                 if (hardware.contains(chipset) || board.contains(chipset)) {
-                    android.util.Log.i("SpotiFLAC", "Matched problematic chipset: $chipset")
+                    android.util.Log.i("HiResStreamer", "Matched problematic chipset: $chipset")
                     return true
                 }
             }
@@ -188,14 +188,14 @@ class MainActivity: AudioServiceFragmentActivity() {
                 // Check for known problematic GPUs
                 for (pattern in PROBLEMATIC_GPU_PATTERNS) {
                     if (gpuRenderer.contains(pattern)) {
-                        android.util.Log.i("SpotiFLAC", "Matched problematic GPU on old Android: $pattern")
+                        android.util.Log.i("HiResStreamer", "Matched problematic GPU on old Android: $pattern")
                         return true
                     }
                 }
 
                 // For very old Android (< 8.0), always use Skia as Vulkan support is spotty
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    android.util.Log.i("SpotiFLAC", "Android < 8.0, using Skia for safety")
+                    android.util.Log.i("HiResStreamer", "Android < 8.0, using Skia for safety")
                     return true
                 }
             }
@@ -204,7 +204,7 @@ class MainActivity: AudioServiceFragmentActivity() {
             val gpuRenderer = getGpuRenderer().lowercase(Locale.ROOT)
             for (pattern in PROBLEMATIC_GPU_PATTERNS) {
                 if (gpuRenderer.contains(pattern)) {
-                    android.util.Log.i("SpotiFLAC", "Matched problematic GPU: $pattern")
+                    android.util.Log.i("HiResStreamer", "Matched problematic GPU: $pattern")
                     return true
                 }
             }
@@ -231,12 +231,12 @@ class MainActivity: AudioServiceFragmentActivity() {
         override fun getFlutterShellArgs(): FlutterShellArgs {
             val args = super.getFlutterShellArgs()
             if (shouldDisableImpeller()) {
-                android.util.Log.w("SpotiFLAC", "Legacy/problematic GPU detected for ${Build.MODEL}")
-                android.util.Log.w("SpotiFLAC", "Device: ${Build.MANUFACTURER} ${Build.MODEL}, SDK: ${Build.VERSION.SDK_INT}")
-                android.util.Log.w("SpotiFLAC", "Hardware: ${Build.HARDWARE}, Board: ${Build.BOARD}")
+                android.util.Log.w("HiResStreamer", "Legacy/problematic GPU detected for ${Build.MODEL}")
+                android.util.Log.w("HiResStreamer", "Device: ${Build.MANUFACTURER} ${Build.MODEL}, SDK: ${Build.VERSION.SDK_INT}")
+                android.util.Log.w("HiResStreamer", "Hardware: ${Build.HARDWARE}, Board: ${Build.BOARD}")
                 args.add("--enable-impeller=false")
             } else {
-                android.util.Log.i("SpotiFLAC", "Using Impeller renderer for ${Build.MODEL}")
+                android.util.Log.i("HiResStreamer", "Using Impeller renderer for ${Build.MODEL}")
             }
             return args
         }
@@ -420,7 +420,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                     }
                 } catch (e: Exception) {
                     android.util.Log.w(
-                        "SpotiFLAC",
+                        "HiResStreamer",
                         "Download progress stream poll failed: ${e.message}",
                     )
                 }
@@ -452,7 +452,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                     }
                 } catch (e: Exception) {
                     android.util.Log.w(
-                        "SpotiFLAC",
+                        "HiResStreamer",
                         "Library scan progress stream poll failed: ${e.message}",
                     )
                 }
@@ -636,7 +636,7 @@ class MainActivity: AudioServiceFragmentActivity() {
             // which may return MediaStore URIs from SAF tree traversal
             if (isMediaStoreUri(uri)) {
                 android.util.Log.d(
-                    "SpotiFLAC",
+                    "HiResStreamer",
                     "SAF denied for MediaStore URI, trying MediaStore fallback: $uri",
                 )
                 val result = copyMediaStoreUriToTemp(uri, fallbackExt)
@@ -646,13 +646,13 @@ class MainActivity: AudioServiceFragmentActivity() {
                 }
             }
             android.util.Log.w(
-                "SpotiFLAC",
+                "HiResStreamer",
                 "SAF read denied for $uri: ${e.message}",
             )
             return null
         } catch (e: Exception) {
             android.util.Log.w(
-                "SpotiFLAC",
+                "HiResStreamer",
                 "Failed copying SAF uri $uri to temp: ${e.message}",
             )
             return null
@@ -688,13 +688,13 @@ class MainActivity: AudioServiceFragmentActivity() {
             }
 
             android.util.Log.d(
-                "SpotiFLAC",
+                "HiResStreamer",
                 "MediaStore fallback succeeded for $uri",
             )
             return tempFile.absolutePath
         } catch (e: Exception) {
             android.util.Log.w(
-                "SpotiFLAC",
+                "HiResStreamer",
                 "MediaStore fallback also failed for $uri: ${e.message}",
             )
             try { tempFile?.delete() } catch (_: Exception) {}
@@ -824,7 +824,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                 traversalErrors++
                 updateSafScanProgress { it.errorCount = traversalErrors }
                 android.util.Log.w(
-                    "SpotiFLAC",
+                    "HiResStreamer",
                     "SAF scan: failed listing directory $dirUri: ${e.message}",
                 )
                 continue
@@ -856,7 +856,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                     traversalErrors++
                     updateSafScanProgress { it.errorCount = traversalErrors }
                     android.util.Log.w(
-                        "SpotiFLAC",
+                        "HiResStreamer",
                         "SAF scan: skipped child under $dirUri: ${e.message}",
                     )
                 }
@@ -896,7 +896,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                 copyUriToTemp(doc.uri, fallbackExt)
             } catch (e: Exception) {
                 android.util.Log.w(
-                    "SpotiFLAC",
+                    "HiResStreamer",
                     "SAF scan: failed to copy ${doc.uri}: ${e.message}",
                 )
                 null
@@ -1021,7 +1021,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                 traversalErrors++
                 updateSafScanProgress { it.errorCount = traversalErrors }
                 android.util.Log.w(
-                    "SpotiFLAC",
+                    "HiResStreamer",
                     "SAF incremental scan: failed listing directory $dirUri: ${e.message}",
                 )
                 continue
@@ -1074,7 +1074,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                     traversalErrors++
                     updateSafScanProgress { it.errorCount = traversalErrors }
                     android.util.Log.w(
-                        "SpotiFLAC",
+                        "HiResStreamer",
                         "SAF incremental scan: skipped child under $dirUri: ${e.message}",
                     )
                 }
@@ -1131,7 +1131,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                 copyUriToTemp(doc.uri, fallbackExt)
             } catch (e: Exception) {
                 android.util.Log.w(
-                    "SpotiFLAC",
+                    "HiResStreamer",
                     "SAF incremental scan: failed to copy ${doc.uri}: ${e.message}",
                 )
                 null
@@ -1359,7 +1359,7 @@ class MainActivity: AudioServiceFragmentActivity() {
         try {
             Gobackend.cleanupExtensions()
         } catch (e: Exception) {
-            android.util.Log.w("SpotiFLAC", "Failed to cleanup extensions on destroy: ${e.message}")
+            android.util.Log.w("HiResStreamer", "Failed to cleanup extensions on destroy: ${e.message}")
         }
         stopDownloadProgressStream()
         stopLibraryScanProgressStream()
@@ -1850,7 +1850,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                                         Gobackend.readFileMetadata(filePath)
                                     }
                                 } catch (e: Exception) {
-                                    android.util.Log.e("SpotiFLAC", "readFileMetadata failed: ${e.message}", e)
+                                    android.util.Log.e("HiResStreamer", "readFileMetadata failed: ${e.message}", e)
                                     """{"error":"${e.message?.replace("\"", "'")}"}"""
                                 }
                             }
@@ -1889,7 +1889,7 @@ class MainActivity: AudioServiceFragmentActivity() {
                                         Gobackend.editFileMetadata(filePath, metadataJson)
                                     }
                                 } catch (e: Exception) {
-                                    android.util.Log.e("SpotiFLAC", "editFileMetadata failed: ${e.message}", e)
+                                    android.util.Log.e("HiResStreamer", "editFileMetadata failed: ${e.message}", e)
                                     """{"error":"${e.message?.replace("\"", "'")}"}"""
                                 }
                             }

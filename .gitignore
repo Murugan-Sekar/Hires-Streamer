@@ -18,8 +18,8 @@ referensi/
 # Documentation (development only, published separately)
 docs/
 
-# Old spotiflac_android folder (moved to root)
-spotiflac_android/
+# Old hires_streamer folder (moved to root)
+hires_streamer/
 
 # Flutter/Dart
 .dart_tool/

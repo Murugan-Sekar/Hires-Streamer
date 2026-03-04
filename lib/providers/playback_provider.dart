@@ -11,19 +11,19 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:spotiflac_android/models/playback_item.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/local_library_provider.dart';
-import 'package:spotiflac_android/providers/library_collections_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/download_queue_provider.dart';
-import 'package:spotiflac_android/services/ffmpeg_service.dart';
-import 'package:spotiflac_android/services/library_database.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/artist_utils.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
-import 'package:spotiflac_android/utils/logger.dart';
-import 'package:spotiflac_android/services/download_request_payload.dart';
+import 'package:hires_streamer/models/playback_item.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/local_library_provider.dart';
+import 'package:hires_streamer/providers/library_collections_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/services/ffmpeg_service.dart';
+import 'package:hires_streamer/services/library_database.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/artist_utils.dart';
+import 'package:hires_streamer/utils/file_access.dart';
+import 'package:hires_streamer/utils/logger.dart';
+import 'package:hires_streamer/services/download_request_payload.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _log = AppLogger('PlaybackProvider');
@@ -171,7 +171,7 @@ class PlaybackState {
 }
 
 // ─── Audio Handler (audio_service bridge) ────────────────────────────────────
-class _SpotiFLACAudioHandler extends audio_service.BaseAudioHandler
+class _HiResStreamerAudioHandler extends audio_service.BaseAudioHandler
     with audio_service.SeekHandler {
   final Future<void> Function() _onPlay;
   final Future<void> Function() _onPause;
@@ -181,7 +181,7 @@ class _SpotiFLACAudioHandler extends audio_service.BaseAudioHandler
   final Future<void> Function(Duration position) _onSeek;
   final Future<void> Function() _onToggleLove;
 
-  _SpotiFLACAudioHandler({
+  _HiResStreamerAudioHandler({
     required Future<void> Function() onPlay,
     required Future<void> Function() onPause,
     required Future<void> Function() onSkipNext,
@@ -266,7 +266,7 @@ class PlaybackController extends Notifier<PlaybackState> {
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _snapshotSaveTimer;
   Timer? _smartQueueModelSaveTimer;
-  _SpotiFLACAudioHandler? _audioHandler;
+  _HiResStreamerAudioHandler? _audioHandler;
   var _initialized = false;
   static const Duration _prefetchThresholdFloor = Duration(seconds: 12);
   static const Duration _prefetchThresholdCeiling = Duration(seconds: 40);
@@ -559,8 +559,8 @@ class PlaybackController extends Notifier<PlaybackState> {
   Future<void> _initAudioService() async {
     try {
       _audioHandler =
-          await audio_service.AudioService.init<_SpotiFLACAudioHandler>(
-            builder: () => _SpotiFLACAudioHandler(
+          await audio_service.AudioService.init<_HiResStreamerAudioHandler>(
+            builder: () => _HiResStreamerAudioHandler(
               onPlay: _handleNotificationPlay,
               onPause: _handleNotificationPause,
               onSkipNext: _handleNotificationNext,
@@ -570,7 +570,7 @@ class PlaybackController extends Notifier<PlaybackState> {
               onToggleLove: _handleNotificationToggleLove,
             ),
             config: const audio_service.AudioServiceConfig(
-              androidNotificationChannelId: 'com.zarz.spotiflac.playback',
+              androidNotificationChannelId: 'com.peter.hiresstreamer.playback',
               androidNotificationChannelName: 'Music Playback',
               androidNotificationOngoing: true,
               androidShowNotificationBadge: true,

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:spotiflac_android/constants/app_info.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/screens/settings/appearance_settings_page.dart';
-import 'package:spotiflac_android/screens/settings/download_settings_page.dart';
-import 'package:spotiflac_android/screens/settings/extensions_page.dart';
-import 'package:spotiflac_android/screens/settings/library_settings_page.dart';
-import 'package:spotiflac_android/screens/settings/options_settings_page.dart';
-import 'package:spotiflac_android/screens/settings/about_page.dart';
-import 'package:spotiflac_android/screens/settings/cache_management_page.dart';
-import 'package:spotiflac_android/screens/settings/donate_page.dart';
-import 'package:spotiflac_android/screens/settings/log_screen.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/widgets/settings_group.dart';
+import 'package:hires_streamer/constants/app_info.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/screens/settings/appearance_settings_page.dart';
+import 'package:hires_streamer/screens/settings/download_settings_page.dart';
+import 'package:hires_streamer/screens/settings/extensions_page.dart';
+import 'package:hires_streamer/screens/settings/library_settings_page.dart';
+import 'package:hires_streamer/screens/settings/options_settings_page.dart';
+import 'package:hires_streamer/screens/settings/about_page.dart';
+import 'package:hires_streamer/screens/settings/cache_management_page.dart';
+import 'package:hires_streamer/screens/settings/donate_page.dart';
+import 'package:hires_streamer/screens/settings/log_screen.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/widgets/settings_group.dart';
 
 class SettingsTab extends ConsumerWidget {
   const SettingsTab({super.key});
@@ -108,7 +108,7 @@ class SettingsTab extends ConsumerWidget {
                   SettingsItem(
                     icon: Icons.favorite_outline,
                     title: 'Donate',
-                    subtitle: 'Support SpotiFLAC-Mobile development',
+                    subtitle: 'Support HiResStreamer-Mobile development',
                     onTap: () => _navigateTo(context, const DonatePage()),
                     showDivider: false,
                   ),

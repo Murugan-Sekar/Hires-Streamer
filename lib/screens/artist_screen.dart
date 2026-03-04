@@ -3,23 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/track_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/playback_provider.dart';
-import 'package:spotiflac_android/providers/download_queue_provider.dart';
-import 'package:spotiflac_android/providers/recent_access_provider.dart';
-import 'package:spotiflac_android/providers/local_library_provider.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
-import 'package:spotiflac_android/screens/album_screen.dart';
-import 'package:spotiflac_android/screens/home_tab.dart'
-    show ExtensionAlbumScreen;
-import 'package:spotiflac_android/widgets/download_service_picker.dart';
-import 'package:spotiflac_android/widgets/track_collection_quick_actions.dart';
-import 'package:spotiflac_android/utils/clickable_metadata.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/track_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/playback_provider.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/providers/recent_access_provider.dart';
+import 'package:hires_streamer/providers/local_library_provider.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/file_access.dart';
+import 'package:hires_streamer/screens/album_screen.dart';
+import 'package:hires_streamer/screens/home_tab.dart' show ExtensionAlbumScreen;
+import 'package:hires_streamer/widgets/download_service_picker.dart';
+import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
+import 'package:hires_streamer/utils/clickable_metadata.dart';
 
 /// Simple in-memory cache for artist data
 class _ArtistCache {

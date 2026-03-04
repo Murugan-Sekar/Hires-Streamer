@@ -3191,7 +3191,7 @@ func buildStoreExtensionDestPath(destDir, extensionID string) (string, error) {
 	}
 
 	safeExtensionID := sanitizeFilename(extensionID)
-	return filepath.Join(destDir, safeExtensionID+".spotiflac-ext"), nil
+	return filepath.Join(destDir, safeExtensionID+".HiResStreamer-ext"), nil
 }
 
 func DownloadStoreExtensionJSON(extensionID, destDir string) (string, error) {

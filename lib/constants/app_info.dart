@@ -4,18 +4,18 @@ class AppInfo {
   static const String version = '4.0.1';
   static const String buildNumber = '102';
   static const String fullVersion = '$version+$buildNumber';
-  
-  
-  static const String appName = 'SpotiFLAC';
-  static const String copyright = '© 2026 SpotiFLAC';
-  
+
+  static const String appName = 'Hi-Res Streamer';
+  static const String copyright = '© 2026 HiResStreamer';
+
   static const String mobileAuthor = 'zarzet';
   static const String originalAuthor = 'afkarxyz';
-  
-  static const String githubRepo = 'zarzet/SpotiFLAC-Mobile';
+
+  static const String githubRepo = 'zarzet/HiResStreamer-Mobile';
   static const String githubUrl = 'https://github.com/$githubRepo';
-  static const String originalGithubUrl = 'https://github.com/afkarxyz/SpotiFLAC';
-  
+  static const String originalGithubUrl =
+      'https://github.com/afkarxyz/HiResStreamer';
+
   static const String kofiUrl = 'https://ko-fi.com/zarzet';
   static const String githubSponsorsUrl = 'https://github.com/sponsors/zarzet/';
 }

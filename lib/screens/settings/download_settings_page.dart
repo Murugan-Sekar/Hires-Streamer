@@ -5,14 +5,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
-import 'package:spotiflac_android/screens/settings/lyrics_provider_priority_page.dart';
-import 'package:spotiflac_android/widgets/settings_group.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/utils/file_access.dart';
+import 'package:hires_streamer/screens/settings/lyrics_provider_priority_page.dart';
+import 'package:hires_streamer/widgets/settings_group.dart';
 
 class DownloadSettingsPage extends ConsumerStatefulWidget {
   const DownloadSettingsPage({super.key});
@@ -613,7 +613,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
                     subtitle: settings.downloadDirectory.isEmpty
                         ? (Platform.isIOS
                               ? context.l10n.setupAppDocumentsFolder
-                              : 'Music/SpotiFLAC')
+                              : 'Music/HiResStreamer')
                         : settings.downloadDirectory,
                     onTap: () => _pickDirectory(context, ref),
                   ),
@@ -1177,7 +1177,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
   }
 
   Future<String> _getDefaultAndroidDirectory() async {
-    final directMusicPath = '/storage/emulated/0/Music/SpotiFLAC';
+    final directMusicPath = '/storage/emulated/0/Music/HiResStreamer';
     try {
       final musicDir = Directory(directMusicPath);
       if (!await musicDir.exists()) {
@@ -1190,7 +1190,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
         final musicDir = Directory(
-          '${externalDir.parent.parent.parent.parent.path}/Music/SpotiFLAC',
+          '${externalDir.parent.parent.parent.parent.path}/Music/HiResStreamer',
         );
         if (!await musicDir.exists()) {
           await musicDir.create(recursive: true);
@@ -1200,7 +1200,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
     } catch (_) {}
 
     final appDir = await getApplicationDocumentsDirectory();
-    final fallbackDir = Directory('${appDir.path}/SpotiFLAC');
+    final fallbackDir = Directory('${appDir.path}/HiResStreamer');
     if (!await fallbackDir.exists()) {
       await fallbackDir.create(recursive: true);
     }
@@ -1245,7 +1245,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
             ListTile(
               leading: Icon(Icons.folder_special, color: colorScheme.primary),
               title: const Text('App folder (non-SAF)'),
-              subtitle: const Text('Use default Music/SpotiFLAC path'),
+              subtitle: const Text('Use default Music/HiResStreamer path'),
               trailing: !isSafMode ? const Icon(Icons.check) : null,
               onTap: () async {
                 Navigator.pop(ctx);
@@ -1974,7 +1974,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
               _FolderOption(
                 title: context.l10n.folderOrganizationNone,
                 subtitle: context.l10n.folderOrganizationNoneSubtitle,
-                example: 'SpotiFLAC/Track.flac',
+                example: 'HiResStreamer/Track.flac',
                 isSelected: current == 'none',
                 onTap: () {
                   ref
@@ -1986,7 +1986,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
               _FolderOption(
                 title: context.l10n.folderOrganizationByArtist,
                 subtitle: context.l10n.folderOrganizationByArtistSubtitle,
-                example: 'SpotiFLAC/Artist Name/Track.flac',
+                example: 'HiResStreamer/Artist Name/Track.flac',
                 isSelected: current == 'artist',
                 onTap: () {
                   ref
@@ -1998,7 +1998,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
               _FolderOption(
                 title: context.l10n.folderOrganizationByAlbum,
                 subtitle: context.l10n.folderOrganizationByAlbumSubtitle,
-                example: 'SpotiFLAC/Album Name/Track.flac',
+                example: 'HiResStreamer/Album Name/Track.flac',
                 isSelected: current == 'album',
                 onTap: () {
                   ref
@@ -2010,7 +2010,7 @@ class _DownloadSettingsPageState extends ConsumerState<DownloadSettingsPage> {
               _FolderOption(
                 title: context.l10n.folderOrganizationByArtistAlbum,
                 subtitle: context.l10n.folderOrganizationByArtistAlbumSubtitle,
-                example: 'SpotiFLAC/Artist/Album/Track.flac',
+                example: 'HiResStreamer/Artist/Album/Track.flac',
                 isSelected: current == 'artist_album',
                 onTap: () {
                   ref

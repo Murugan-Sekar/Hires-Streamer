@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/mime_utils.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/mime_utils.dart';
 
 /// Regular expression to detect iOS app container paths.
 /// Matches paths like /var/mobile/Containers/Data/Application/{UUID}
@@ -65,7 +65,7 @@ bool isValidIosWritablePath(String path) {
 /// Returns a valid Documents subdirectory path if the input is invalid.
 Future<String> validateOrFixIosPath(
   String path, {
-  String subfolder = 'SpotiFLAC',
+  String subfolder = 'Hi-Res Streamer',
 }) async {
   if (!Platform.isIOS) return path;
 

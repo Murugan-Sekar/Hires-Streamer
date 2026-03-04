@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:spotiflac_android/providers/theme_provider.dart';
-import 'package:spotiflac_android/theme/app_theme.dart';
+import 'package:hires_streamer/providers/theme_provider.dart';
+import 'package:hires_streamer/theme/app_theme.dart';
 
 /// Wrapper widget that provides dynamic color support from device wallpaper
 class DynamicColorWrapper extends ConsumerWidget {
-  final Widget Function(ThemeData light, ThemeData dark, ThemeMode mode) builder;
+  final Widget Function(ThemeData light, ThemeData dark, ThemeMode mode)
+  builder;
 
-  const DynamicColorWrapper({
-    super.key,
-    required this.builder,
-  });
+  const DynamicColorWrapper({super.key, required this.builder});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +20,9 @@ class DynamicColorWrapper extends ConsumerWidget {
         ColorScheme lightScheme;
         ColorScheme darkScheme;
 
-        if (themeSettings.useDynamicColor && lightDynamic != null && darkDynamic != null) {
+        if (themeSettings.useDynamicColor &&
+            lightDynamic != null &&
+            darkDynamic != null) {
           // Use dynamic colors from wallpaper (Android 12+)
           lightScheme = lightDynamic;
           darkScheme = darkDynamic;
@@ -44,7 +44,10 @@ class DynamicColorWrapper extends ConsumerWidget {
         }
 
         final lightTheme = AppTheme.light(dynamicScheme: lightScheme);
-        final darkTheme = AppTheme.dark(dynamicScheme: darkScheme, isAmoled: themeSettings.useAmoled);
+        final darkTheme = AppTheme.dark(
+          dynamicScheme: darkScheme,
+          isAmoled: themeSettings.useAmoled,
+        );
 
         return builder(lightTheme, darkTheme, themeSettings.themeMode);
       },

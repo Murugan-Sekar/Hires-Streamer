@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
-import 'package:spotiflac_android/constants/app_info.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/utils/app_bar_layout.dart';
-import 'package:spotiflac_android/widgets/settings_group.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
+import 'package:hires_streamer/constants/app_info.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/widgets/settings_group.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -171,7 +171,8 @@ class AboutPage extends StatelessWidget {
                   _AboutSettingsItem(
                     icon: Icons.computer,
                     title: context.l10n.aboutPCSource,
-                    subtitle: 'github.com/${AppInfo.originalAuthor}/SpotiFLAC',
+                    subtitle:
+                        'github.com/${AppInfo.originalAuthor}/HiResStreamer',
                     onTap: () => _launchUrl(AppInfo.originalGithubUrl),
                     showDivider: true,
                   ),
@@ -203,14 +204,14 @@ class AboutPage extends StatelessWidget {
                     icon: Icons.telegram,
                     title: context.l10n.aboutTelegramChannel,
                     subtitle: context.l10n.aboutTelegramChannelSubtitle,
-                    onTap: () => _launchUrl('https://t.me/spotiflac'),
+                    onTap: () => _launchUrl('https://t.me/HiResStreamer'),
                     showDivider: true,
                   ),
                   _AboutSettingsItem(
                     icon: Icons.forum_outlined,
                     title: context.l10n.aboutTelegramChat,
                     subtitle: context.l10n.aboutTelegramChatSubtitle,
-                    onTap: () => _launchUrl('https://t.me/spotiflac_chat'),
+                    onTap: () => _launchUrl('https://t.me/HiResStreamer_chat'),
                     showDivider: false,
                   ),
                 ],

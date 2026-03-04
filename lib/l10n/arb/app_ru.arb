@@ -1,7 +1,7 @@
 {
   "@@locale": "ru",
   "@@last_modified": "2026-01-16",
-  "appName": "SpotiFLAC",
+  "appName": "HiResStreamer",
   "@appName": {
     "description": "App name - DO NOT TRANSLATE"
   },
@@ -516,7 +516,7 @@
   "@aboutMobileDeveloper": {
     "description": "Role description for mobile dev"
   },
-  "aboutOriginalCreator": "Создатель оригинального SpotiFLAC",
+  "aboutOriginalCreator": "Создатель оригинального HiResStreamer",
   "@aboutOriginalCreator": {
     "description": "Role description for original creator"
   },
@@ -748,7 +748,7 @@
   "@trackMetadataOpenFolder": {
     "description": "Action button - open containing folder"
   },
-  "setupTitle": "Добро пожаловать в SpotiFLAC",
+  "setupTitle": "Добро пожаловать в HiResStreamer",
   "@setupTitle": {
     "description": "Setup wizard title"
   },
@@ -796,7 +796,7 @@
   "@setupStorageAccessRequired": {
     "description": "Title when storage access needed"
   },
-  "setupStorageAccessMessage": "SpotiFLAC требуется разрешение \"Доступ ко всем файлам\" для сохранения музыкальных файлов в выбранную папку.",
+  "setupStorageAccessMessage": "HiResStreamer требуется разрешение \"Доступ ко всем файлам\" для сохранения музыкальных файлов в выбранную папку.",
   "@setupStorageAccessMessage": {
     "description": "Explanation for storage access"
   },
@@ -911,7 +911,7 @@
   "@setupStorageRequired": {
     "description": "Title when storage permission needed"
   },
-  "setupStorageDescription": "SpotiFLAC требуется разрешение на хранение для сохранения скачанных файлов.",
+  "setupStorageDescription": "HiResStreamer требуется разрешение на хранение для сохранения скачанных файлов.",
   "@setupStorageDescription": {
     "description": "Explanation for storage permission"
   },
@@ -1280,7 +1280,7 @@
   "@snackbarFileNotFound": {
     "description": "Snackbar - file doesn't exist"
   },
-  "snackbarSelectExtFile": "Пожалуйста, выберите .spotiflac-ext-файл",
+  "snackbarSelectExtFile": "Пожалуйста, выберите .HiResStreamer-ext-файл",
   "@snackbarSelectExtFile": {
     "description": "Snackbar - wrong file type selected"
   },
@@ -2366,7 +2366,7 @@
   "@extensionsNoExtensions": {
     "description": "Empty state - no extensions"
   },
-  "extensionsNoExtensionsSubtitle": "Установите .spotiflac-ext файлы для добавления новых провайдеров",
+  "extensionsNoExtensionsSubtitle": "Установите .HiResStreamer-ext файлы для добавления новых провайдеров",
   "@extensionsNoExtensionsSubtitle": {
     "description": "Empty state subtitle"
   },
@@ -3173,7 +3173,7 @@
   "@libraryStorageAccessRequired": {
     "description": "Dialog title for storage permission"
   },
-  "libraryStorageAccessMessage": "SpotiFLAC требуется доступ к хранилищу для сканирования вашей библиотеки музыки. Пожалуйста, предоставьте разрешение в настройках.",
+  "libraryStorageAccessMessage": "HiResStreamer требуется доступ к хранилищу для сканирования вашей библиотеки музыки. Пожалуйста, предоставьте разрешение в настройках.",
   "@libraryStorageAccessMessage": {
     "description": "Dialog message for storage permission"
   },
@@ -3183,7 +3183,7 @@
   },
   "librarySourceDownloaded": "Скачанные",
   "@librarySourceDownloaded": {
-    "description": "Badge for tracks downloaded via SpotiFLAC"
+    "description": "Badge for tracks downloaded via HiResStreamer"
   },
   "librarySourceLocal": "Локальные",
   "@librarySourceLocal": {
@@ -3316,7 +3316,7 @@
   "@storageSwitchToSafMessage": {
     "description": "Explanation when switching to SAF"
   },
-  "storageSwitchToAppMessage": "Ваши скачанные файлы останутся в текущем выбранной вами папке SAF.\n\nНовые файлы будут сохранены в папке Music/SpotiFLAC.",
+  "storageSwitchToAppMessage": "Ваши скачанные файлы останутся в текущем выбранной вами папке SAF.\n\nНовые файлы будут сохранены в папке Music/HiResStreamer.",
   "@storageSwitchToAppMessage": {
     "description": "Explanation when switching to app storage"
   },
@@ -3400,7 +3400,7 @@
   "@storageModeInfo": {
     "description": "Info when user has files in both storage modes"
   },
-  "tutorialWelcomeTitle": "Добро пожаловать в SpotiFLAC!",
+  "tutorialWelcomeTitle": "Добро пожаловать в HiResStreamer!",
   "@tutorialWelcomeTitle": {
     "description": "Tutorial welcome page title"
   },
@@ -3870,7 +3870,7 @@
     "description": "Snackbar when conversion fails"
   },
   "setupModeSelectionTitle": "Выберите режим",
-  "setupModeSelectionDescription": "Как вы хотите использовать SpotiFLAC? Вы всегда можете изменить это позже в Настройках.",
+  "setupModeSelectionDescription": "Как вы хотите использовать HiResStreamer? Вы всегда можете изменить это позже в Настройках.",
   "setupModeDownloaderTitle": "Загрузчик",
   "setupModeDownloaderFeature1": "Скачивайте треки в качестве FLAC без потерь",
   "setupModeDownloaderFeature2": "Сохраняйте музыку на устройство для прослушивания офлайн",

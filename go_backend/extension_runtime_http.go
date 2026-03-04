@@ -90,7 +90,7 @@ func (r *ExtensionRuntime) httpGet(call goja.FunctionCall) goja.Value {
 	}
 
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "Spotiflac-Extension/1.0")
+		req.Header.Set("User-Agent", "HiResStreamer-Extension/1.0")
 	}
 
 	resp, err := r.httpClient.Do(req)
@@ -183,7 +183,7 @@ func (r *ExtensionRuntime) httpPost(call goja.FunctionCall) goja.Value {
 	}
 
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "Spotiflac-Extension/1.0")
+		req.Header.Set("User-Agent", "HiResStreamer-Extension/1.0")
 	}
 	if req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")
@@ -291,7 +291,7 @@ func (r *ExtensionRuntime) httpRequest(call goja.FunctionCall) goja.Value {
 	}
 
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "Spotiflac-Extension/1.0")
+		req.Header.Set("User-Agent", "HiResStreamer-Extension/1.0")
 	}
 	if bodyStr != "" && req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")
@@ -415,7 +415,7 @@ func (r *ExtensionRuntime) httpMethodShortcut(method string, call goja.FunctionC
 		req.Header.Set(k, v)
 	}
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "Spotiflac-Extension/1.0")
+		req.Header.Set("User-Agent", "HiResStreamer-Extension/1.0")
 	}
 	if bodyStr != "" && req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")

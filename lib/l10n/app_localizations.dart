@@ -127,7 +127,7 @@ abstract class AppLocalizations {
   /// App name - DO NOT TRANSLATE
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC'**
+  /// **'HiResStreamer'**
   String get appName;
 
   /// App description shown in about page
@@ -895,7 +895,7 @@ abstract class AppLocalizations {
   /// Role description for original creator
   ///
   /// In en, this message translates to:
-  /// **'Creator of the original SpotiFLAC'**
+  /// **'Creator of the original HiResStreamer'**
   String get aboutOriginalCreator;
 
   /// Role description for logo artist
@@ -1219,7 +1219,7 @@ abstract class AppLocalizations {
   /// Setup wizard title
   ///
   /// In en, this message translates to:
-  /// **'Welcome to SpotiFLAC'**
+  /// **'Welcome to HiResStreamer'**
   String get setupTitle;
 
   /// Setup wizard subtitle
@@ -1291,7 +1291,7 @@ abstract class AppLocalizations {
   /// Explanation for storage access
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC needs \"All files access\" permission to save music files to your chosen folder.'**
+  /// **'HiResStreamer needs \"All files access\" permission to save music files to your chosen folder.'**
   String get setupStorageAccessMessage;
 
   /// Android 11+ specific explanation
@@ -1447,7 +1447,7 @@ abstract class AppLocalizations {
   /// Explanation for storage permission
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC needs storage permission to save your downloaded music files.'**
+  /// **'HiResStreamer needs storage permission to save your downloaded music files.'**
   String get setupStorageDescription;
 
   /// Success message for notification permission
@@ -1909,7 +1909,7 @@ abstract class AppLocalizations {
   /// Snackbar - wrong file type selected
   ///
   /// In en, this message translates to:
-  /// **'Please select a .spotiflac-ext file'**
+  /// **'Please select a .HiResStreamer-ext file'**
   String get snackbarSelectExtFile;
 
   /// Snackbar - provider order saved
@@ -3391,7 +3391,7 @@ abstract class AppLocalizations {
   /// Empty state subtitle
   ///
   /// In en, this message translates to:
-  /// **'Install .spotiflac-ext files to add new providers'**
+  /// **'Install .HiResStreamer-ext files to add new providers'**
   String get extensionsNoExtensionsSubtitle;
 
   /// Button to install extension from file
@@ -4495,7 +4495,7 @@ abstract class AppLocalizations {
   /// Dialog message for storage permission
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC needs storage access to scan your music library. Please grant permission in settings.'**
+  /// **'HiResStreamer needs storage access to scan your music library. Please grant permission in settings.'**
   String get libraryStorageAccessMessage;
 
   /// Error when folder doesn't exist
@@ -4504,7 +4504,7 @@ abstract class AppLocalizations {
   /// **'Selected folder does not exist'**
   String get libraryFolderNotExist;
 
-  /// Badge for tracks downloaded via SpotiFLAC
+  /// Badge for tracks downloaded via HiResStreamer
   ///
   /// In en, this message translates to:
   /// **'Downloaded'**
@@ -4687,7 +4687,7 @@ abstract class AppLocalizations {
   /// Explanation when switching to app storage
   ///
   /// In en, this message translates to:
-  /// **'Your existing downloads will remain in the current SAF location and stay accessible.\n\nNew downloads will be saved to Music/SpotiFLAC folder.'**
+  /// **'Your existing downloads will remain in the current SAF location and stay accessible.\n\nNew downloads will be saved to Music/HiResStreamer folder.'**
   String get storageSwitchToAppMessage;
 
   /// Section header for existing downloads info
@@ -4771,7 +4771,7 @@ abstract class AppLocalizations {
   /// Tutorial welcome page title
   ///
   /// In en, this message translates to:
-  /// **'Welcome to SpotiFLAC!'**
+  /// **'Welcome to HiRes Streamer!'**
   String get tutorialWelcomeTitle;
 
   /// Tutorial welcome page description
@@ -5661,7 +5661,7 @@ abstract class AppLocalizations {
   /// Description for mode selection step
   ///
   /// In en, this message translates to:
-  /// **'How would you like to use SpotiFLAC? You can always change this later in Settings.'**
+  /// **'How would you like to use HiResStreamer? You can always change this later in Settings.'**
   String get setupModeSelectionDescription;
 
   /// Title for downloader mode option
@@ -5739,13 +5739,13 @@ abstract class AppLocalizations {
   /// Subtitle for the What's New screen
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC has evolved — here\'s what changed since 3.x'**
+  /// **'HiResStreamer has evolved — here\'s what changed since 3.x'**
   String get whatsNewSubtitle;
 
   /// Welcome page title in What's New screen
   ///
   /// In en, this message translates to:
-  /// **'SpotiFLAC Mobile 4.0'**
+  /// **'HiResStreamer Mobile 4.0'**
   String get whatsNewWelcomeTitle;
 
   /// Welcome page description in What's New screen
@@ -6015,7 +6015,7 @@ abstract class AppLocalizations {
   /// Ready card message on last What's New page
   ///
   /// In en, this message translates to:
-  /// **'You\'re all set — enjoy the new SpotiFLAC!'**
+  /// **'You\'re all set — enjoy the new HiResStreamer!'**
   String get whatsNewReadyMessage;
 
   /// Button text to dismiss What's New screen

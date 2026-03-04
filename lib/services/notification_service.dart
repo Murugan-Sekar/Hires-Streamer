@@ -518,7 +518,7 @@ class NotificationService {
 
     await _showSafely(
       id: updateDownloadId,
-      title: 'Downloading SpotiFLAC v$version',
+      title: 'Downloading HiResStreamer v$version',
       body: '$receivedMB / $totalMB MB • $percentage%',
       details: details,
     );
@@ -552,7 +552,7 @@ class NotificationService {
     await _showSafely(
       id: updateDownloadId,
       title: 'Update Ready',
-      body: 'SpotiFLAC v$version downloaded. Tap to install.',
+      body: 'HiResStreamer v$version downloaded. Tap to install.',
       details: details,
     );
   }

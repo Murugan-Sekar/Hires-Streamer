@@ -70,8 +70,8 @@ func TestBuildStoreExtensionDestPath(t *testing.T) {
 	if strings.Contains(baseName, "/") || strings.Contains(baseName, `\`) {
 		t.Fatalf("expected filename to be sanitized, got: %s", baseName)
 	}
-	if !strings.HasSuffix(baseName, ".spotiflac-ext") {
-		t.Fatalf("expected .spotiflac-ext suffix, got: %s", baseName)
+	if !strings.HasSuffix(baseName, ".HiResStreamer-ext") {
+		t.Fatalf("expected .HiResStreamer-ext suffix, got: %s", baseName)
 	}
 
 	if _, err := buildStoreExtensionDestPath(baseDir, "   "); err == nil {

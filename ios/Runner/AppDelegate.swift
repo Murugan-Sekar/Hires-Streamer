@@ -4,10 +4,10 @@ import Gobackend  // Import Go framework
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
-    private let CHANNEL = "com.zarz.spotiflac/backend"
-    private let DOWNLOAD_PROGRESS_STREAM_CHANNEL = "com.zarz.spotiflac/download_progress_stream"
-    private let LIBRARY_SCAN_PROGRESS_STREAM_CHANNEL = "com.zarz.spotiflac/library_scan_progress_stream"
-    private let streamQueue = DispatchQueue(label: "com.zarz.spotiflac.progress_stream", qos: .utility)
+    private let CHANNEL = "com.peter.hiresstreamer/backend"
+    private let DOWNLOAD_PROGRESS_STREAM_CHANNEL = "com.peter.hiresstreamer/download_progress_stream"
+    private let LIBRARY_SCAN_PROGRESS_STREAM_CHANNEL = "com.peter.hiresstreamer/library_scan_progress_stream"
+    private let streamQueue = DispatchQueue(label: "com.peter.hiresstreamer.progress_stream", qos: .utility)
     private var downloadProgressTimer: DispatchSourceTimer?
     private var downloadProgressEventSink: FlutterEventSink?
     private var lastDownloadProgressPayload: String?
@@ -955,7 +955,7 @@ import Gobackend  // Import Go framework
             
         default:
             throw NSError(
-                domain: "SpotiFLAC",
+                domain: "HiResStreamer",
                 code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "Method not implemented: \(call.method)"]
             )

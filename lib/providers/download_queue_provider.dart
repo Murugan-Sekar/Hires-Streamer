@@ -5,20 +5,20 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:spotiflac_android/models/download_item.dart';
-import 'package:spotiflac_android/models/settings.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/services/app_state_database.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/services/download_request_payload.dart';
-import 'package:spotiflac_android/services/ffmpeg_service.dart';
-import 'package:spotiflac_android/services/notification_service.dart';
-import 'package:spotiflac_android/services/history_database.dart';
-import 'package:spotiflac_android/utils/logger.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
-import 'package:spotiflac_android/utils/string_utils.dart';
+import 'package:hires_streamer/models/download_item.dart';
+import 'package:hires_streamer/models/settings.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/services/app_state_database.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/services/download_request_payload.dart';
+import 'package:hires_streamer/services/ffmpeg_service.dart';
+import 'package:hires_streamer/services/notification_service.dart';
+import 'package:hires_streamer/services/history_database.dart';
+import 'package:hires_streamer/utils/logger.dart';
+import 'package:hires_streamer/utils/file_access.dart';
+import 'package:hires_streamer/utils/string_utils.dart';
 
 final _log = AppLogger('DownloadQueue');
 final _historyLog = AppLogger('DownloadHistory');
@@ -26,7 +26,7 @@ final _historyLog = AppLogger('DownloadHistory');
 final _invalidFolderChars = RegExp(r'[<>:"/\\|?*]');
 final _trailingDotsRegex = RegExp(r'\.+$');
 final _yearRegex = RegExp(r'^(\d{4})');
-const _defaultOutputFolderName = 'SpotiFLAC';
+const _defaultOutputFolderName = 'Hi-Res Streamer';
 const _defaultAndroidMusicSubpath = 'Music/$_defaultOutputFolderName';
 
 class DownloadHistoryItem {
@@ -1905,7 +1905,7 @@ class DownloadQueueNotifier extends Notifier<DownloadQueueState> {
       final buffer = StringBuffer();
 
       if (!fileExists) {
-        buffer.writeln('# SpotiFLAC Failed Downloads');
+        buffer.writeln('# HiResStreamer Failed Downloads');
         buffer.writeln('# Date: $dateStr');
         buffer.writeln('#');
         buffer.writeln('# Format: [Time] Track - Artist | URL | Error');
@@ -2750,7 +2750,7 @@ class DownloadQueueNotifier extends Notifier<DownloadQueueState> {
         final testResult = await PlatformBridge.createSafFileFromPath(
           treeUri: settings.downloadTreeUri,
           relativeDir: '',
-          fileName: '.spotiflac_test',
+          fileName: '.HiResStreamer_test',
           mimeType: 'application/octet-stream',
           srcPath: '',
         );

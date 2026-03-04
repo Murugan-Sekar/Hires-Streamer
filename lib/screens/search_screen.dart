@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:spotiflac_android/services/cover_cache_manager.dart';
-import 'package:spotiflac_android/models/track.dart';
-import 'package:spotiflac_android/providers/track_provider.dart';
-import 'package:spotiflac_android/providers/download_queue_provider.dart';
-import 'package:spotiflac_android/providers/playback_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/widgets/track_collection_quick_actions.dart';
-import 'package:spotiflac_android/utils/clickable_metadata.dart';
+import 'package:hires_streamer/services/cover_cache_manager.dart';
+import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/providers/track_provider.dart';
+import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/providers/playback_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
+import 'package:hires_streamer/utils/clickable_metadata.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String query;

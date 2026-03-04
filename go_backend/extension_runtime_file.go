@@ -174,7 +174,7 @@ func (r *ExtensionRuntime) fileDownload(call goja.FunctionCall) goja.Value {
 		req.Header.Set(k, v)
 	}
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "SpotiFLAC-Extension/1.0")
+		req.Header.Set("User-Agent", "HiResStreamer-Extension/1.0")
 	}
 
 	resp, err := r.httpClient.Do(req)

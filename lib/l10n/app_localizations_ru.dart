@@ -9,7 +9,7 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
-  String get appName => 'SpotiFLAC';
+  String get appName => 'HiResStreamer';
 
   @override
   String get appDescription =>
@@ -455,7 +455,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get aboutMobileDeveloper => 'Разработчик мобильной версии';
 
   @override
-  String get aboutOriginalCreator => 'Создатель оригинального SpotiFLAC';
+  String get aboutOriginalCreator => 'Создатель оригинального HiResStreamer';
 
   @override
   String get aboutLogoArtist =>
@@ -648,7 +648,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get trackMetadataOpenFolder => 'Открыть папку';
 
   @override
-  String get setupTitle => 'Добро пожаловать в SpotiFLAC';
+  String get setupTitle => 'Добро пожаловать в HiResStreamer';
 
   @override
   String get setupSubtitle => 'Давайте начнем';
@@ -686,7 +686,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get setupStorageAccessMessage =>
-      'SpotiFLAC требуется разрешение \"Доступ ко всем файлам\" для сохранения музыкальных файлов в выбранную папку.';
+      'HiResStreamer требуется разрешение \"Доступ ко всем файлам\" для сохранения музыкальных файлов в выбранную папку.';
 
   @override
   String get setupStorageAccessMessageAndroid11 =>
@@ -777,7 +777,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get setupStorageDescription =>
-      'SpotiFLAC требуется разрешение на хранение для сохранения скачанных файлов.';
+      'HiResStreamer требуется разрешение на хранение для сохранения скачанных файлов.';
 
   @override
   String get setupNotificationGranted =>
@@ -1063,7 +1063,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get snackbarSelectExtFile =>
-      'Пожалуйста, выберите .spotiflac-ext-файл';
+      'Пожалуйста, выберите .HiResStreamer-ext-файл';
 
   @override
   String get snackbarProviderPrioritySaved => 'Приоритет провайдера сохранён';
@@ -1898,7 +1898,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get extensionsNoExtensionsSubtitle =>
-      'Установите .spotiflac-ext файлы для добавления новых провайдеров';
+      'Установите .HiResStreamer-ext файлы для добавления новых провайдеров';
 
   @override
   String get extensionsInstallButton => 'Установить расширение';
@@ -2572,7 +2572,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get libraryStorageAccessMessage =>
-      'SpotiFLAC требуется доступ к хранилищу для сканирования вашей библиотеки музыки. Пожалуйста, предоставьте разрешение в настройках.';
+      'HiResStreamer требуется доступ к хранилищу для сканирования вашей библиотеки музыки. Пожалуйста, предоставьте разрешение в настройках.';
 
   @override
   String get libraryFolderNotExist => 'Выбранной папки не существует';
@@ -2692,7 +2692,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storageSwitchToAppMessage =>
-      'Ваши скачанные файлы останутся в текущем выбранной вами папке SAF.\n\nНовые файлы будут сохранены в папке Music/SpotiFLAC.';
+      'Ваши скачанные файлы останутся в текущем выбранной вами папке SAF.\n\nНовые файлы будут сохранены в папке Music/HiResStreamer.';
 
   @override
   String get storageSwitchExistingDownloads => 'Существующие загрузки';
@@ -2768,7 +2768,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storageModeInfo => 'Ваши файлы хранятся в нескольких местах';
 
   @override
-  String get tutorialWelcomeTitle => 'Добро пожаловать в SpotiFLAC!';
+  String get tutorialWelcomeTitle => 'Добро пожаловать в HiResStreamer!';
 
   @override
   String get tutorialWelcomeDesc =>
@@ -3340,7 +3340,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get setupModeSelectionDescription =>
-      'Как вы хотите использовать SpotiFLAC? Вы всегда можете изменить это позже в Настройках.';
+      'Как вы хотите использовать HiResStreamer? Вы всегда можете изменить это позже в Настройках.';
 
   @override
   String get setupModeDownloaderTitle => 'Загрузчик';
@@ -3388,10 +3388,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get whatsNewSubtitle =>
-      'SpotiFLAC has evolved — here\'s what changed since 3.x';
+      'HiResStreamer has evolved — here\'s what changed since 3.x';
 
   @override
-  String get whatsNewWelcomeTitle => 'SpotiFLAC Mobile 4.0';
+  String get whatsNewWelcomeTitle => 'HiResStreamer Mobile 4.0';
 
   @override
   String get whatsNewWelcomeDesc =>
@@ -3539,7 +3539,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get whatsNewReadyMessage =>
-      'You\'re all set — enjoy the new SpotiFLAC!';
+      'You\'re all set — enjoy the new HiResStreamer!';
 
   @override
   String get whatsNewGetStarted => 'Let\'s Go';

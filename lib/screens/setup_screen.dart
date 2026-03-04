@@ -6,11 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:spotiflac_android/providers/extension_provider.dart';
-import 'package:spotiflac_android/providers/settings_provider.dart';
-import 'package:spotiflac_android/l10n/l10n.dart';
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
+import 'package:hires_streamer/providers/extension_provider.dart';
+import 'package:hires_streamer/providers/settings_provider.dart';
+import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/file_access.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
@@ -620,7 +620,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 SizedBox(height: titleGap),
                 Text(
-                  context.l10n.appName,
+                  // context.l10n.appName,
+                  "Hi-Res Streamer",
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     fontWeight: FontWeight.bold,

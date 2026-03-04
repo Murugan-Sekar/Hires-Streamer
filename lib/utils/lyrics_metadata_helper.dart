@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:spotiflac_android/services/platform_bridge.dart';
-import 'package:spotiflac_android/utils/file_access.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/file_access.dart';
 
 bool hasEmbeddedLyricsMetadata(Map<String, String> metadata) {
   final lyrics = (metadata['LYRICS'] ?? '').trim();

@@ -129,7 +129,7 @@ var (
 )
 
 const (
-	defaultRegistryURL = "https://raw.githubusercontent.com/zarzet/SpotiFLAC-Extension/main/registry.json"
+	defaultRegistryURL = "https://raw.githubusercontent.com/zarzet/HiResStreamer-Extension/main/registry.json"
 	cacheTTL           = 30 * time.Minute
 	cacheFileName      = "store_cache.json"
 )
