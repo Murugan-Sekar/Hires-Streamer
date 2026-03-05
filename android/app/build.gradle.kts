@@ -77,7 +77,7 @@ android {
     // Split APKs by ABI for smaller individual downloads
     splits {
         abi {
-            isEnable = true
+            isEnable = true // enable splitting into multiple APKs
             reset()
             include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = true // Also generate universal APK
