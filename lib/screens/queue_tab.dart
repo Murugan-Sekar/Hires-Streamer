@@ -247,25 +247,22 @@ class _GroupedFolder {
   String get key => path;
 }
 
-enum _FolderBrowserEntryType { folder, track }
+enum _FolderBrowserEntryType { folder }
 
 class _FolderBrowserEntry {
   final String name;
   final String path;
   final _FolderBrowserEntryType type;
-  final UnifiedLibraryItem? track;
   final List<UnifiedLibraryItem> allDescendantTracks;
 
   _FolderBrowserEntry({
     required this.name,
     required this.path,
     required this.type,
-    this.track,
     required this.allDescendantTracks,
   });
 
-  String get key =>
-      type == _FolderBrowserEntryType.track ? (track?.id ?? path) : path;
+  String get key => path;
 }
 
 class _HistoryStats {
@@ -2115,6 +2112,28 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     }
   }
 
+  String _getFolderNameFromPath(String path) {
+    if (!path.startsWith('content://')) return p.basename(path);
+    try {
+      final uri = Uri.parse(path);
+      final segments = uri.pathSegments;
+
+      // For SAF tree URIs, the last segment usually contains the folder id/path
+      // e.g. .../tree/primary%3AMusic%2FFLAC
+      final rawId = segments.last;
+      final decoded = Uri.decodeComponent(rawId);
+
+      if (decoded.contains(':')) {
+        final parts = decoded.split(':');
+        final pathPart = parts.last;
+        return pathPart.isEmpty ? parts.first : p.basename(pathPart);
+      }
+      return p.basename(decoded);
+    } catch (_) {
+      return p.basename(path);
+    }
+  }
+
   _HistoryStats _buildHistoryStats(
     List<DownloadHistoryItem> items, [
     List<LocalLibraryItem> localItems = const [],
@@ -2235,7 +2254,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     folderMap.forEach((path, unifiedTracks) {
       unifiedTracks.sort((a, b) => a.trackName.compareTo(b.trackName));
 
-      String displayName = p.basename(path);
+      String displayName = _getFolderNameFromPath(path);
       try {
         if (localRoot.isNotEmpty && path.startsWith(localRoot)) {
           final relative = p.relative(path, from: localRoot);
@@ -2335,26 +2354,38 @@ class _QueueTabState extends ConsumerState<QueueTab> {
           if (relative == null) continue;
           final parts = p.split(relative);
           if (parts.length == 1 && relative != '.') {
-            // It's a track in the root
-            rootEntriesMap[item.id] = _FolderBrowserEntry(
-              name: item.trackName,
-              path: item.filePath,
-              type: _FolderBrowserEntryType.track,
-              track: item,
-              allDescendantTracks: [item],
-            );
+            // Instead of displaying tracks at the root as loose files,
+            // group them into a folder entry representing the source root.
+            final folderPath = root;
+            final folderName = _getFolderNameFromPath(root);
+
+            if (rootEntriesMap.containsKey(folderPath)) {
+              final existing = rootEntriesMap[folderPath]!;
+              if (existing.type == _FolderBrowserEntryType.folder) {
+                existing.allDescendantTracks.add(item);
+              }
+            } else {
+              rootEntriesMap[folderPath] = _FolderBrowserEntry(
+                name: folderName,
+                path: folderPath,
+                type: _FolderBrowserEntryType.folder,
+                allDescendantTracks: [item],
+              );
+            }
           } else if (parts.length > 1 ||
               (parts.length == 1 && relative == '.')) {
             if (relative == '.') continue;
 
-            final folderName = parts[0];
+            final segment = parts[0];
+            final folderPath = LocalLibraryNotifier.safJoin(root, segment);
+            final folderName = _getFolderNameFromPath(folderPath);
+
             // Skip generic names that don't represent real folders
             if (folderName == 'document' ||
                 folderName == 'primary' ||
                 folderName == 'tree')
               continue;
 
-            final folderPath = LocalLibraryNotifier.safJoin(root, folderName);
             if (rootEntriesMap.containsKey(folderPath)) {
               rootEntriesMap[folderPath]!.allDescendantTracks.add(item);
             } else {
@@ -4235,11 +4266,6 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     _FolderBrowserEntry entry,
     ColorScheme colorScheme,
   ) {
-    if (entry.type == _FolderBrowserEntryType.track && entry.track != null) {
-      // It's a track in the root, render it as a track item
-      return _buildUnifiedGridItem(context, entry.track!, colorScheme);
-    }
-
     return GestureDetector(
       onTap: () {
         _navigateToFolderBrowser(entry);

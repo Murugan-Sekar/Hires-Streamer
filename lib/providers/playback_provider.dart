@@ -348,6 +348,8 @@ class PlaybackController extends Notifier<PlaybackState> {
   int _lastProgressSnapshotMs = -1;
   int _lyricsGeneration = 0;
   AppLifecycleListener? _appLifecycleListener;
+  DateTime? _lastNaturalCompletionAt;
+  String? _lastCompletedItemKey;
 
   @override
   PlaybackState build() {
@@ -543,6 +545,16 @@ class PlaybackController extends Notifier<PlaybackState> {
       _player.playbackEventStream.listen(
         (_) {},
         onError: (Object error, StackTrace stackTrace) {
+          final errorStr = error.toString().toLowerCase();
+          // Silently ignore interruption errors as they are expected during track transitions
+          if (errorStr.contains('abort') ||
+              errorStr.contains('interrupted') ||
+              errorStr.contains('connection reset') ||
+              errorStr.contains('network is unreachable')) {
+            _log.d('Ignoring transient playback event error: $error');
+            return;
+          }
+
           _log.e('Playback error: $error');
           state = state.copyWith(
             isLoading: false,
@@ -740,6 +752,22 @@ class PlaybackController extends Notifier<PlaybackState> {
 
   // ─── Track completion ────────────────────────────────────────────────────
   void _onTrackCompleted() {
+    final now = DateTime.now();
+    final item = state.currentItem;
+    final itemKey = item != null ? _trackKeyFromPlaybackItem(item) : '';
+
+    // Debounce duplicate completion triggers for the same track within 500ms
+    if (_lastCompletedItemKey == itemKey &&
+        _lastNaturalCompletionAt != null &&
+        now.difference(_lastNaturalCompletionAt!) <
+            const Duration(milliseconds: 500)) {
+      _log.d('Ignoring duplicate naturally completion trigger for $itemKey');
+      return;
+    }
+
+    _lastNaturalCompletionAt = now;
+    _lastCompletedItemKey = itemKey;
+
     _learnFromCurrentTrackOutcome(completedNaturally: true);
     final completedItem = state.currentItem;
     if (completedItem != null) {
@@ -796,6 +824,11 @@ class PlaybackController extends Notifier<PlaybackState> {
         type: 'playback_failed',
       );
     } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('abort') || errorStr.contains('interrupted')) {
+        _log.d('Ignoring interruption during track restart: $e');
+        return;
+      }
       _log.e('Failed to restart current track: $e');
       _setPlaybackError('Failed to restart track: $e', type: 'playback_failed');
     }
