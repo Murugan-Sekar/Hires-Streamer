@@ -923,7 +923,7 @@
   "@setupIcloudNotSupported": {
     "description": "Error when user selects iCloud Drive on iOS"
   },
-  "setupDownloadInFlac": "Download Spotify tracks in FLAC",
+  "setupDownloadInFlac": "Download & Stream Spotify tracks in FLAC",
   "@setupDownloadInFlac": {
     "description": "App tagline in setup"
   },
@@ -955,7 +955,7 @@
   "@setupStorageRequired": {
     "description": "Title when storage permission needed"
   },
-  "setupStorageDescription": "HiResStreamer needs storage permission to save your downloaded music files.",
+  "setupStorageDescription": "Hi-Res Streamer needs storage permission to save your downloaded music files.",
   "@setupStorageDescription": {
     "description": "Explanation for storage permission"
   },

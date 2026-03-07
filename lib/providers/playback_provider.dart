@@ -403,17 +403,18 @@ class PlaybackController extends Notifier<PlaybackState> {
         // Handle track completion
         if (processingState == ProcessingState.completed) {
           // Guard against premature completion (e.g. on stream connection reset during seek)
-          final posMs = state.position.inMilliseconds;
-          final durMs = state.duration.inMilliseconds;
-          final remainingMs = durMs - posMs;
+          // Use direct player values instead of state as they are more up-to-date in background isolates
+          final playerPos = _player.position.inMilliseconds;
+          final playerDur = _player.duration?.inMilliseconds ?? 0;
+          final remainingMs = playerDur - playerPos;
 
-          // Only transition if we are actually near the end (within 1 second)
+          // Only transition if we are actually near the end (within 2 seconds)
           // or if duration is unknown (0)
-          if (durMs <= 0 || remainingMs.abs() < 1000) {
+          if (playerDur <= 0 || remainingMs.abs() < 2000) {
             _onTrackCompleted();
           } else {
             _log.w(
-              'Premature ProcessingState.completed detected. Position: $posMs, Duration: $durMs. Ignoring completion transition.',
+              'Premature ProcessingState.completed detected. Player Position: $playerPos, Player Duration: $playerDur. Ignoring completion transition.',
             );
             // Optionally try to recover if we were playing, but usually it means the stream broke.
             // For now, ignoring ensures we don't skip to the next track or restart if repeat is on.

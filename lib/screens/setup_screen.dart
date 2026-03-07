@@ -491,101 +491,132 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    IconButton.filledTonal(
-                      onPressed: _prevPage,
-                      icon: const Icon(Icons.arrow_back),
-                      style: IconButton.styleFrom(
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        foregroundColor: colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 48), // Spacer
-                  const Spacer(),
-                  // Progress Indicator
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 4,
+      body: Stack(
+        children: [
+          // Content
+          Positioned.fill(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildWelcomeStep(colorScheme),
+                _buildStorageStep(colorScheme),
+                if (_androidSdkVersion >= 33)
+                  _buildNotificationStep(colorScheme),
+                _buildDirectoryStep(colorScheme),
+                _buildModeSelectionStep(colorScheme),
+              ],
+            ),
+          ),
+
+          // Top Bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      IconButton.filledTonal(
+                        onPressed: _prevPage,
+                        icon: const Icon(Icons.arrow_back),
+                        style: IconButton.styleFrom(
                           backgroundColor: colorScheme.surfaceContainerHighest,
-                          color: colorScheme.primary,
-                          strokeCap: StrokeCap.round,
+                          foregroundColor: colorScheme.onSurfaceVariant,
                         ),
-                        Center(
-                          child: Text(
-                            '${_currentStep + 1}/$_totalSteps',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurfaceVariant,
+                      )
+                    else
+                      const SizedBox(width: 48), // Spacer
+                    const Spacer(),
+                    // Progress Indicator
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 4,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            color: colorScheme.primary,
+                            strokeCap: StrokeCap.round,
+                          ),
+                          Center(
+                            child: Text(
+                              '${_currentStep + 1}/$_totalSteps',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-
-            // Content
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildWelcomeStep(colorScheme),
-                  _buildStorageStep(colorScheme),
-                  if (_androidSdkVersion >= 33)
-                    _buildNotificationStep(colorScheme),
-                  _buildDirectoryStep(colorScheme),
-                  _buildModeSelectionStep(colorScheme),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: const _CustomFABLocation(
+        FloatingActionButtonLocation.endFloat,
+        offsetY: -16, // Move button up slightly
       ),
       floatingActionButton: _currentStep < _totalSteps - 1
           ? FloatingActionButton.extended(
               onPressed: _isStepCompleted(_currentStep) ? _nextPage : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               label: Row(
                 children: [
-                  Text(context.l10n.setupNext),
+                  Text(
+                    context.l10n.setupNext,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward),
                 ],
               ),
               icon: const SizedBox.shrink(), // Custom layout
             )
-          : FloatingActionButton.extended(
+          : FilledButton.tonalIcon(
               onPressed: _isLoading ? null : _completeSetup,
-              label: _isLoading
+              icon: _isLoading
                   ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        color: colorScheme.onPrimary,
+                        strokeWidth: 2,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     )
-                  : Text(context.l10n.setupGetStarted),
-              icon: const Icon(Icons.check),
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+                  : const Icon(Icons.check),
+              label: Text(context.l10n.setupGetStarted),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
     );
   }
@@ -597,39 +628,48 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         final textScale = MediaQuery.textScalerOf(
           context,
         ).scale(1.0).clamp(1.0, 1.4);
-        final logoSize = (shortestSide * 0.24).clamp(80.0, 104.0);
-        final titleGap = (shortestSide * 0.06).clamp(16.0, 32.0);
-        final subtitleGap = (shortestSide * 0.04).clamp(8.0, 16.0);
-        final minContentHeight = constraints.maxHeight > 48
-            ? constraints.maxHeight - 48
-            : 0.0;
+        final logoSize = (shortestSide * 0.28).clamp(90.0, 120.0);
+        final titleGap = (shortestSide * 0.03).clamp(8.0, 16.0);
+        final subtitleGap = (shortestSide * 0.015).clamp(4.0, 8.0);
+        final minContentHeight = constraints.maxHeight;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: minContentHeight),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  'assets/images/logo-transparant.png',
-                  width: logoSize,
-                  height: logoSize,
-                  color: colorScheme.primary,
-                  fit: BoxFit.contain,
-                ),
-                SizedBox(height: titleGap),
-                Text(
-                  // context.l10n.appName,
-                  "Hi-Res Streamer",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                    fontSize:
-                        (Theme.of(context).textTheme.displaySmall?.fontSize ??
-                            36) *
-                        (1 + ((textScale - 1) * 0.18)),
+                SizedBox(
+                  height: 190, // Reduced from 220 for more compact view
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo-transparant.png',
+                        width: logoSize,
+                        height: logoSize,
+                        color: colorScheme.primary,
+                        fit: BoxFit.contain,
+                      ),
+                      SizedBox(height: titleGap),
+                      Text(
+                        // context.l10n.appName,
+                        "Hi-Res Streamer",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                              fontSize:
+                                  (Theme.of(
+                                        context,
+                                      ).textTheme.displaySmall?.fontSize ??
+                                      36) *
+                                  (1 + ((textScale - 1) * 0.18)),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: subtitleGap),
@@ -641,6 +681,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     height: 1.5,
                   ),
                 ),
+                const SizedBox(height: 100), // Action area placeholder
               ],
             ),
           ),
@@ -664,10 +705,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               icon: const Icon(Icons.folder_open),
               label: Text(context.l10n.setupGrantPermission),
               style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 16,
+                  vertical: 14,
                 ),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
     );
@@ -690,10 +735,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   icon: const Icon(Icons.notifications_active),
                   label: Text(context.l10n.setupEnableNotifications),
                   style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 16,
+                      vertical: 14,
                     ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 TextButton(
@@ -714,22 +763,34 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       child: Column(
         children: [
           if (_selectedDirectory != null)
-            Card(
-              color: colorScheme.secondaryContainer,
-              child: ListTile(
-                leading: Icon(
-                  Icons.folder,
-                  color: colorScheme.onSecondaryContainer,
+            FilledButton.tonalIcon(
+              onPressed: _selectDirectory,
+              icon: const Icon(Icons.folder),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      _selectedDirectory!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.edit, size: 18),
+                ],
+              ),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                title: Text(
-                  _selectedDirectory!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _selectDirectory,
-                ),
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             )
           else
@@ -738,10 +799,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               icon: const Icon(Icons.create_new_folder),
               label: Text(context.l10n.setupSelectFolder),
               style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 16,
+                  vertical: 14,
                 ),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -801,38 +866,49 @@ class _StepLayout extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final shortestSide = MediaQuery.sizeOf(context).shortestSide;
-        final iconPadding = (shortestSide * 0.06).clamp(16.0, 24.0);
-        final iconSize = (shortestSide * 0.12).clamp(32.0, 48.0);
-        final titleGap = (shortestSide * 0.06).clamp(16.0, 32.0);
-        final descriptionGap = (shortestSide * 0.04).clamp(8.0, 16.0);
-        final actionGap = (shortestSide * 0.09).clamp(20.0, 48.0);
-        final minContentHeight = constraints.maxHeight > 48
-            ? constraints.maxHeight - 48
-            : 0.0;
+        final iconPadding = (shortestSide * 0.04).clamp(10.0, 14.0);
+        final iconSize = (shortestSide * 0.26).clamp(85.0, 115.0);
+        final titleGap = (shortestSide * 0.03).clamp(8.0, 16.0);
+        final descriptionGap = (shortestSide * 0.015).clamp(4.0, 8.0);
+        final actionGap = (shortestSide * 0.04).clamp(12.0, 24.0);
+        final minContentHeight = constraints.maxHeight;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: minContentHeight),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: EdgeInsets.all(iconPadding),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    shape: BoxShape.circle,
+                SizedBox(
+                  height: 190, // Consistent with welcome step
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(iconPadding),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          icon,
+                          size: iconSize,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      SizedBox(height: titleGap),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, size: iconSize, color: colorScheme.primary),
-                ),
-                SizedBox(height: titleGap),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
                 SizedBox(height: descriptionGap),
                 Text(
@@ -844,7 +920,11 @@ class _StepLayout extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: actionGap),
-                child,
+                // Action area with min height to stabilize header
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 100),
+                  child: Center(child: child),
+                ),
               ],
             ),
           ),
@@ -863,25 +943,28 @@ class _SuccessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min, // Compact card
         children: [
-          Icon(Icons.check_circle, color: colorScheme.onPrimaryContainer),
-          const SizedBox(width: 12),
-          Expanded(
+          Icon(
+            Icons.check_circle,
+            size: 20,
+            color: colorScheme.onPrimaryContainer,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            // Allow text to wrap if screen is very narrow
             child: Text(
               text,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onPrimaryContainer,
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -920,7 +1003,7 @@ class _ModeCard extends StatelessWidget {
           color: isSelected
               ? colorScheme.primaryContainer
               : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
                 ? colorScheme.primary
@@ -1010,5 +1093,18 @@ class _ModeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CustomFABLocation extends FloatingActionButtonLocation {
+  final FloatingActionButtonLocation location;
+  final double offsetY;
+
+  const _CustomFABLocation(this.location, {this.offsetY = 0});
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    Offset offset = location.getOffset(scaffoldGeometry);
+    return Offset(offset.dx, offset.dy + offsetY);
   }
 }

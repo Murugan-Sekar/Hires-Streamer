@@ -1399,7 +1399,7 @@ abstract class AppLocalizations {
   /// App tagline in setup
   ///
   /// In en, this message translates to:
-  /// **'Download Spotify tracks in FLAC'**
+  /// **'Download & Stream Spotify tracks in FLAC'**
   String get setupDownloadInFlac;
 
   /// Setup step indicator - storage
@@ -1447,7 +1447,7 @@ abstract class AppLocalizations {
   /// Explanation for storage permission
   ///
   /// In en, this message translates to:
-  /// **'HiResStreamer needs storage permission to save your downloaded music files.'**
+  /// **'Hi-Res Streamer needs storage permission to save your downloaded music files.'**
   String get setupStorageDescription;
 
   /// Success message for notification permission

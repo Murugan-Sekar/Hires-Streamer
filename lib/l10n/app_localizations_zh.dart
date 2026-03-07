@@ -734,7 +734,7 @@ class AppLocalizationsZh extends AppLocalizations {
       'iCloud Drive is not supported. Please use the app Documents folder.';
 
   @override
-  String get setupDownloadInFlac => 'Download Spotify tracks in FLAC';
+  String get setupDownloadInFlac => 'Download & Stream Spotify tracks in FLAC';
 
   @override
   String get setupStepStorage => 'Storage';
@@ -759,7 +759,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get setupStorageDescription =>
-      'HiResStreamer needs storage permission to save your downloaded music files.';
+      'Hi-Res Streamer needs storage permission to save your downloaded music files.';
 
   @override
   String get setupNotificationGranted => 'Notification Permission Granted!';
@@ -4137,7 +4137,7 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
       'iCloud Drive is not supported. Please use the app Documents folder.';
 
   @override
-  String get setupDownloadInFlac => 'Download Spotify tracks in FLAC';
+  String get setupDownloadInFlac => 'Download & Stream Spotify tracks in FLAC';
 
   @override
   String get setupStepStorage => 'Storage';
@@ -4162,7 +4162,7 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get setupStorageDescription =>
-      'HiResStreamer needs storage permission to save your downloaded music files.';
+      'Hi-Res Streamer needs storage permission to save your downloaded music files.';
 
   @override
   String get setupNotificationGranted => 'Notification Permission Granted!';
@@ -7110,7 +7110,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       'iCloud Drive is not supported. Please use the app Documents folder.';
 
   @override
-  String get setupDownloadInFlac => 'Download Spotify tracks in FLAC';
+  String get setupDownloadInFlac => 'Download & Stream Spotify tracks in FLAC';
 
   @override
   String get setupStepStorage => 'Storage';
@@ -7135,7 +7135,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get setupStorageDescription =>
-      'HiResStreamer needs storage permission to save your downloaded music files.';
+      'Hi-Res Streamer needs storage permission to save your downloaded music files.';
 
   @override
   String get setupNotificationGranted => 'Notification Permission Granted!';
