@@ -447,15 +447,14 @@ class _ExtensionItem extends StatelessWidget {
   IconData _getCategoryIcon(String category) {
     switch (category) {
       case StoreCategory.metadata:
-        return Icons.label_outline;
+      case StoreCategory.integration:
+        return Icons.library_music_rounded;
       case StoreCategory.download:
         return Icons.download_outlined;
       case StoreCategory.utility:
         return Icons.build_outlined;
       case StoreCategory.lyrics:
         return Icons.lyrics_outlined;
-      case StoreCategory.integration:
-        return Icons.link;
       default:
         return Icons.extension;
     }
@@ -515,12 +514,51 @@ class _ExtensionItem extends StatelessWidget {
                             );
                           },
                         )
-                      : Icon(
-                          _getCategoryIcon(extension.category),
-                          color: extension.isInstalled
-                              ? colorScheme.onPrimaryContainer
-                              : colorScheme.onSurfaceVariant,
-                        ),
+                      : (extension.id.toLowerCase().contains('spotify') ||
+                                extension.displayName.toLowerCase().contains(
+                                  'spotify',
+                                )
+                            ? Image.network(
+                                'https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg',
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            value:
+                                                loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(
+                                      _getCategoryIcon(extension.category),
+                                      color: extension.isInstalled
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                              )
+                            : Icon(
+                                _getCategoryIcon(extension.category),
+                                color: extension.isInstalled
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurfaceVariant,
+                              )),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -562,47 +600,6 @@ class _ExtensionItem extends StatelessWidget {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (extension.requiresNewerApp) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                size: 12,
-                                color: colorScheme.onErrorContainer,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Requires v${extension.minAppVersion}+',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: colorScheme.onErrorContainer,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ] else ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          extension.description,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ],
                   ),
                 ),

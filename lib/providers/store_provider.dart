@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hires_streamer/constants/app_info.dart';
+
 import 'package:hires_streamer/services/platform_bridge.dart';
 import 'package:hires_streamer/utils/logger.dart';
 import 'package:hires_streamer/providers/extension_provider.dart';
@@ -115,10 +115,7 @@ class StoreExtension {
     );
   }
 
-  bool get requiresNewerApp {
-    if (minAppVersion == null || minAppVersion!.isEmpty) return false;
-    return compareVersions(minAppVersion!, AppInfo.version) > 0;
-  }
+  bool get requiresNewerApp => false;
 }
 
 class StoreState {

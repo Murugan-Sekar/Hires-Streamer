@@ -35,17 +35,20 @@ class _ExtensionDetailsScreenState
         slivers: [
           _buildAppBar(context, liveExtension, colorScheme),
           _buildInfoCard(context, liveExtension, colorScheme, isDownloading),
-          _buildSectionHeader(
-            context,
-            context.l10n.aboutTitle,
-            Icons.info_outline,
-            colorScheme,
-          ),
-          _buildDescription(context, liveExtension, colorScheme),
 
           if (liveExtension.tags.isNotEmpty) ...[
             _buildSectionHeader(context, 'Tags', Icons.tag, colorScheme),
             _buildTags(context, liveExtension, colorScheme),
+          ],
+
+          if (liveExtension.description.isNotEmpty) ...[
+            _buildSectionHeader(
+              context,
+              context.l10n.aboutTitle,
+              Icons.info_outline,
+              colorScheme,
+            ),
+            _buildDescription(context, liveExtension, colorScheme),
           ],
 
           _buildSectionHeader(
@@ -108,7 +111,37 @@ class _ExtensionDetailsScreenState
                         errorBuilder: (context, error, stackTrace) =>
                             _buildFallbackIcon(ext, colorScheme, 50),
                       )
-                    : _buildFallbackIcon(ext, colorScheme, 50),
+                    : (ext.id.toLowerCase().contains('spotify') ||
+                              ext.displayName.toLowerCase().contains('spotify')
+                          ? Image.network(
+                              'https://www.scdn.co/mirror/static/images/apple-touch-icon-144x144.png',
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildFallbackIcon(ext, colorScheme, 50),
+                            )
+                          : _buildFallbackIcon(ext, colorScheme, 50)),
               ),
             ),
           ),
@@ -310,25 +343,6 @@ class _ExtensionDetailsScreenState
     );
   }
 
-  Widget _buildDescription(
-    BuildContext context,
-    StoreExtension ext,
-    ColorScheme colorScheme,
-  ) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Text(
-          ext.description,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            height: 1.5,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTags(
     BuildContext context,
     StoreExtension ext,
@@ -355,6 +369,25 @@ class _ExtensionDetailsScreenState
                 ),
               )
               .toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescription(
+    BuildContext context,
+    StoreExtension ext,
+    ColorScheme colorScheme,
+  ) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Text(
+          ext.description,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
         ),
       ),
     );
@@ -482,15 +515,14 @@ class _ExtensionDetailsScreenState
   IconData _getCategoryIcon(String category) {
     switch (category) {
       case 'metadata':
-        return Icons.label_outline;
+      case 'integration':
+        return Icons.library_music_rounded;
       case 'download':
         return Icons.download_outlined;
       case 'utility':
         return Icons.build_outlined;
       case 'lyrics':
         return Icons.lyrics_outlined;
-      case 'integration':
-        return Icons.link;
       default:
         return Icons.extension;
     }
