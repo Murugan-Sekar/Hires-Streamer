@@ -28,9 +28,7 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    const androidSettings = AndroidInitializationSettings('ic_stat_logo');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -149,7 +147,7 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -192,7 +190,7 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -242,7 +240,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: false,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -282,7 +280,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -339,7 +337,7 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -385,7 +383,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: false,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -418,7 +416,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: false,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -451,7 +449,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: false,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -502,7 +500,7 @@ class NotificationService {
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -535,7 +533,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
       autoCancel: true,
       playSound: true,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_stat_logo',
     );
 
     const iosDetails = DarwinNotificationDetails(

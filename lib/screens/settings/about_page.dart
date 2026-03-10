@@ -80,81 +80,9 @@ class AboutPage extends StatelessWidget {
                     githubUsername: AppInfo.mobileAuthor,
                     showDivider: true,
                   ),
-                  _ContributorItem(
-                    name: AppInfo.originalAuthor,
-                    description: context.l10n.aboutOriginalCreator,
-                    githubUsername: AppInfo.originalAuthor,
-                    showDivider: true,
-                  ),
-                  _ContributorItem(
-                    name: 'Amonoman',
-                    description: context.l10n.aboutLogoArtist,
-                    githubUsername: 'Amonoman',
-                    showDivider: false,
-                  ),
                 ],
               ),
             ),
-
-            SliverToBoxAdapter(
-              child: SettingsSectionHeader(
-                title: context.l10n.aboutTranslators,
-              ),
-            ),
-            const SliverToBoxAdapter(child: _TranslatorsSection()),
-
-            SliverToBoxAdapter(
-              child: SettingsSectionHeader(
-                title: context.l10n.aboutSpecialThanks,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SettingsGroup(
-                children: [
-                  _ContributorItem(
-                    name: 'binimum',
-                    description: context.l10n.aboutBinimumDesc,
-                    githubUsername: 'binimum',
-                    showDivider: true,
-                  ),
-                  _ContributorItem(
-                    name: 'sachinsenal0x64',
-                    description: context.l10n.aboutSachinsenalDesc,
-                    githubUsername: 'sachinsenal0x64',
-                    showDivider: true,
-                  ),
-                  _ContributorItem(
-                    name: 'sjdonado',
-                    description: context.l10n.aboutSjdonadoDesc,
-                    githubUsername: 'sjdonado',
-                    showDivider: true,
-                  ),
-                  _AboutSettingsItem(
-                    icon: Icons.music_note_outlined,
-                    title: context.l10n.aboutDabMusic,
-                    subtitle: context.l10n.aboutDabMusicDesc,
-                    onTap: () => _launchUrl('https://dabmusic.xyz'),
-                    showDivider: true,
-                  ),
-                  _AboutSettingsItem(
-                    icon: Icons.music_note_outlined,
-                    title: context.l10n.aboutSpotiSaver,
-                    subtitle: context.l10n.aboutSpotiSaverDesc,
-                    onTap: () => _launchUrl('https://spotisaver.net'),
-                    showDivider: true,
-                  ),
-                  _AboutSettingsItem(
-                    icon: Icons.lyrics_outlined,
-                    title: 'Paxsenix',
-                    subtitle:
-                        'Partner lyrics proxy for Apple Music and QQ Music sources',
-                    onTap: () => _launchUrl('https://lyrics.paxsenix.org'),
-                    showDivider: false,
-                  ),
-                ],
-              ),
-            ),
-
             SliverToBoxAdapter(
               child: SettingsSectionHeader(title: context.l10n.aboutLinks),
             ),
@@ -168,14 +96,14 @@ class AboutPage extends StatelessWidget {
                     onTap: () => _launchUrl(AppInfo.githubUrl),
                     showDivider: true,
                   ),
-                  _AboutSettingsItem(
-                    icon: Icons.computer,
-                    title: context.l10n.aboutPCSource,
-                    subtitle:
-                        'github.com/${AppInfo.originalAuthor}/HiResStreamer',
-                    onTap: () => _launchUrl(AppInfo.originalGithubUrl),
-                    showDivider: true,
-                  ),
+                  // _AboutSettingsItem(
+                  //   icon: Icons.computer,
+                  //   title: context.l10n.aboutPCSource,
+                  //   subtitle:
+                  //       'github.com/${AppInfo.originalAuthor}/HiResStreamer',
+                  //   onTap: () => _launchUrl(AppInfo.originalGithubUrl),
+                  //   showDivider: true,
+                  // ),
                   _AboutSettingsItem(
                     icon: Icons.bug_report_outlined,
                     title: context.l10n.aboutReportIssue,
@@ -194,30 +122,29 @@ class AboutPage extends StatelessWidget {
               ),
             ),
 
-            SliverToBoxAdapter(
-              child: SettingsSectionHeader(title: context.l10n.aboutSocial),
-            ),
-            SliverToBoxAdapter(
-              child: SettingsGroup(
-                children: [
-                  _AboutSettingsItem(
-                    icon: Icons.telegram,
-                    title: context.l10n.aboutTelegramChannel,
-                    subtitle: context.l10n.aboutTelegramChannelSubtitle,
-                    onTap: () => _launchUrl('https://t.me/HiResStreamer'),
-                    showDivider: true,
-                  ),
-                  _AboutSettingsItem(
-                    icon: Icons.forum_outlined,
-                    title: context.l10n.aboutTelegramChat,
-                    subtitle: context.l10n.aboutTelegramChatSubtitle,
-                    onTap: () => _launchUrl('https://t.me/HiResStreamer_chat'),
-                    showDivider: false,
-                  ),
-                ],
-              ),
-            ),
-
+            // SliverToBoxAdapter(
+            //   child: SettingsSectionHeader(title: context.l10n.aboutSocial),
+            // ),
+            // SliverToBoxAdapter(
+            //   child: SettingsGroup(
+            //     children: [
+            //       _AboutSettingsItem(
+            //         icon: Icons.telegram,
+            //         title: context.l10n.aboutTelegramChannel,
+            //         subtitle: context.l10n.aboutTelegramChannelSubtitle,
+            //         onTap: () => _launchUrl('https://t.me/premiumapk4u'),
+            //         showDivider: true,
+            //       ),
+            //       _AboutSettingsItem(
+            //         icon: Icons.forum_outlined,
+            //         title: context.l10n.aboutTelegramChat,
+            //         subtitle: context.l10n.aboutTelegramChatSubtitle,
+            //         onTap: () => _launchUrl('https://t.me/moddedgamesofficial'),
+            //         showDivider: false,
+            //       ),
+            //     ],
+            //   ),
+            // ),
             SliverToBoxAdapter(
               child: SettingsSectionHeader(title: context.l10n.aboutApp),
             ),

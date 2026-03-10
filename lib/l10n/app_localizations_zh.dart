@@ -13,7 +13,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get navHome => 'Home';
@@ -535,7 +535,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutAppDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get albumTitle => 'Album';
@@ -3453,7 +3453,7 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get appDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get navHome => 'Home';
@@ -3938,7 +3938,7 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get aboutAppDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get albumTitle => 'Album';
@@ -6426,7 +6426,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get navHome => 'Home';
@@ -6911,7 +6911,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutAppDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get albumTitle => 'Album';

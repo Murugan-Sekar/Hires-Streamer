@@ -13,7 +13,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get appDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get navHome => 'Home';
@@ -535,7 +535,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aboutAppDescription =>
-      'Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.';
+      'Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.';
 
   @override
   String get albumTitle => 'Album';

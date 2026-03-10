@@ -5,7 +5,7 @@
   "@appName": {
     "description": "App name - DO NOT TRANSLATE"
   },
-  "appDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.",
+  "appDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.",
   "@appDescription": {
     "description": "App description shown in about page"
   },
@@ -580,7 +580,7 @@
   "@aboutDabMusicDesc": {
     "description": "Credit for DAB Music API"
   },
-  "aboutAppDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.",
+  "aboutAppDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.",
   "@aboutAppDescription": {
     "description": "App description in header card"
   },

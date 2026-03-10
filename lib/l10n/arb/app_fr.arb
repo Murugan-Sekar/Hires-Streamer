@@ -628,7 +628,7 @@
   "@aboutSpotiSaverDesc": {
     "description": "Credit for SpotiSaver API"
   },
-  "aboutAppDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, and Amazon Music.",
+  "aboutAppDescription": "Download Spotify tracks in lossless quality from Tidal, Qobuz, Deezer, and Amazon Music.",
   "@aboutAppDescription": {
     "description": "App description in header card"
   },

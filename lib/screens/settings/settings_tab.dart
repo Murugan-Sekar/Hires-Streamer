@@ -105,13 +105,13 @@ class SettingsTab extends ConsumerWidget {
                     subtitle: l10n.settingsExtensionsSubtitle,
                     onTap: () => _navigateTo(context, const ExtensionsPage()),
                   ),
-                  SettingsItem(
-                    icon: Icons.favorite_outline,
-                    title: 'Donate',
-                    subtitle: 'Support HiResStreamer-Mobile development',
-                    onTap: () => _navigateTo(context, const DonatePage()),
-                    showDivider: false,
-                  ),
+                  // SettingsItem(
+                  //   icon: Icons.favorite_outline,
+                  //   title: 'Donate',
+                  //   subtitle: 'Support HiResStreamer-Mobile development',
+                  //   onTap: () => _navigateTo(context, const DonatePage()),
+                  //   showDivider: false,
+                  // ),
                 ],
               );
             },

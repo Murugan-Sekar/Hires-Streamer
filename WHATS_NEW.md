@@ -1,15 +1,9 @@
-# Whats new (1.0.2+3 - 2026-03-09)
-
-## Added
-
-- **Integrated Deezer**: New streaming and download provider support.
-- **Improved Extension Details**: Extension descriptions are now visible in the inner detail page for better clarity.
-- **Broad Localization Support**: Added support for multiple languages including Hindi, Japanese, Korean, Portuguese, Russian, and more.
-
-## Fixed
-
-- **UI Cleanup**: Removed redundant extension descriptions from the store tab list to improve the interface.
+# Whats new (1.0.2+4 - 2026-03-10)
 
 ## Changed
 
-- **Modernized Layout**: Refined the extension details layout for a more modern look and feel.
+- **Branding Update**: Implemented a dedicated notification and lockscreen icon using the app logo for a more consistent and professional experience.
+- **Improved Localization**: Updated app descriptions across all supported languages to include the new Deezer integration.
+- **Package Migration**: Updated internal platform channels from `com.peter.hiresstreamer` to `com.parker.hiresstreamer` for consistent naming convention.
+- **UI Simplification**: Cleaned up the Settings and About pages by removing redundant sections (Donate, Social links) to provide a more focused experience.
+- **Internal Refinements**: Minor code cleanups and bug fixes across the settings and notification modules.

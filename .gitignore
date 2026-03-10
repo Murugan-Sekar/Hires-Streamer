@@ -73,3 +73,9 @@ flutter_*.log
 # Development tools
 tool/
 .claude/settings.local.json
+
+#Whats New
+WHATS_NEW.md
+
+#Github
+.github/

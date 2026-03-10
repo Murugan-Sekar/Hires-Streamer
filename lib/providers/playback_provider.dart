@@ -585,6 +585,7 @@ class PlaybackController extends Notifier<PlaybackState> {
             config: const audio_service.AudioServiceConfig(
               androidNotificationChannelId: 'com.peter.hiresstreamer.playback',
               androidNotificationChannelName: 'Music Playback',
+              androidNotificationIcon: 'drawable/ic_stat_logo',
               androidNotificationOngoing: true,
               androidShowNotificationBadge: true,
               androidStopForegroundOnPause: true,
