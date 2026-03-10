@@ -241,6 +241,8 @@ type DownloadResult struct {
 	FilePath      string
 	BitDepth      int
 	SampleRate    int
+	MaxBitDepth   int
+	MaxSampleRate float64
 	Title         string
 	Artist        string
 	Album         string
@@ -335,6 +337,8 @@ func buildDownloadSuccessResponse(
 		Copyright:        copyright,
 		LyricsLRC:        result.LyricsLRC,
 		DecryptionKey:    result.DecryptionKey,
+		MaxBitDepth:      result.MaxBitDepth,
+		MaxSampleRate:    result.MaxSampleRate,
 	}
 }
 
@@ -464,17 +468,19 @@ func DownloadTrack(requestJSON string) (string, error) {
 		qobuzResult, qobuzErr := downloadFromQobuz(req)
 		if qobuzErr == nil {
 			result = DownloadResult{
-				FilePath:    qobuzResult.FilePath,
-				BitDepth:    qobuzResult.BitDepth,
-				SampleRate:  qobuzResult.SampleRate,
-				Title:       qobuzResult.Title,
-				Artist:      qobuzResult.Artist,
-				Album:       qobuzResult.Album,
-				ReleaseDate: qobuzResult.ReleaseDate,
-				TrackNumber: qobuzResult.TrackNumber,
-				DiscNumber:  qobuzResult.DiscNumber,
-				ISRC:        qobuzResult.ISRC,
-				LyricsLRC:   qobuzResult.LyricsLRC,
+				FilePath:      qobuzResult.FilePath,
+				BitDepth:      qobuzResult.BitDepth,
+				SampleRate:    qobuzResult.SampleRate,
+				MaxBitDepth:   qobuzResult.MaxBitDepth,
+				MaxSampleRate: qobuzResult.MaxSampleRate,
+				Title:         qobuzResult.Title,
+				Artist:        qobuzResult.Artist,
+				Album:         qobuzResult.Album,
+				ReleaseDate:   qobuzResult.ReleaseDate,
+				TrackNumber:   qobuzResult.TrackNumber,
+				DiscNumber:    qobuzResult.DiscNumber,
+				ISRC:          qobuzResult.ISRC,
+				LyricsLRC:     qobuzResult.LyricsLRC,
 			}
 		}
 		err = qobuzErr
@@ -691,17 +697,19 @@ func DownloadWithFallback(requestJSON string) (string, error) {
 			qobuzResult, qobuzErr := downloadFromQobuz(req)
 			if qobuzErr == nil {
 				result = DownloadResult{
-					FilePath:    qobuzResult.FilePath,
-					BitDepth:    qobuzResult.BitDepth,
-					SampleRate:  qobuzResult.SampleRate,
-					Title:       qobuzResult.Title,
-					Artist:      qobuzResult.Artist,
-					Album:       qobuzResult.Album,
-					ReleaseDate: qobuzResult.ReleaseDate,
-					TrackNumber: qobuzResult.TrackNumber,
-					DiscNumber:  qobuzResult.DiscNumber,
-					ISRC:        qobuzResult.ISRC,
-					LyricsLRC:   qobuzResult.LyricsLRC,
+					FilePath:      qobuzResult.FilePath,
+					BitDepth:      qobuzResult.BitDepth,
+					SampleRate:    qobuzResult.SampleRate,
+					MaxBitDepth:   qobuzResult.MaxBitDepth,
+					MaxSampleRate: qobuzResult.MaxSampleRate,
+					Title:         qobuzResult.Title,
+					Artist:        qobuzResult.Artist,
+					Album:         qobuzResult.Album,
+					ReleaseDate:   qobuzResult.ReleaseDate,
+					TrackNumber:   qobuzResult.TrackNumber,
+					DiscNumber:    qobuzResult.DiscNumber,
+					ISRC:          qobuzResult.ISRC,
+					LyricsLRC:     qobuzResult.LyricsLRC,
 				}
 			} else if !errors.Is(qobuzErr, ErrDownloadCancelled) {
 				GoLog("[DownloadWithFallback] Qobuz error: %v\n", qobuzErr)

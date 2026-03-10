@@ -602,6 +602,14 @@ class _TrackMetadataScreenState extends ConsumerState<TrackMetadataScreen> {
 
                   const SizedBox(height: 16),
 
+                  if (!_isLocalItem &&
+                      _service == 'qobuz' &&
+                      _downloadItem?.maxBitDepth != null &&
+                      _downloadItem!.maxBitDepth! > 0)
+                    _buildQualitySelectionCard(context, colorScheme),
+
+                  const SizedBox(height: 16),
+
                   _buildLyricsCard(context, colorScheme),
 
                   const SizedBox(height: 24),
@@ -1080,6 +1088,184 @@ class _TrackMetadataScreenState extends ConsumerState<TrackMetadataScreen> {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
     return '$minutes:${secs.toString().padLeft(2, '0')}';
+  }
+
+  /// Determine which quality tier a bitDepth/sampleRate combo falls into
+  String _qualityTierFromBitSpec(int bitDepth, double sampleRateKhz) {
+    if (bitDepth >= 24 && sampleRateKhz > 96) return 'HI_RES_LOSSLESS';
+    if (bitDepth >= 24 && sampleRateKhz > 44.1) return 'HI_RES';
+    return 'LOSSLESS';
+  }
+
+  /// Map tone quality strings used in history to a canonical tier key
+  String? _qualityStrToTier(String? quality) {
+    if (quality == null) return null;
+    final q = quality.toUpperCase();
+    if (q.contains('192') || q.contains('HI_RES_LOSSLESS')) {
+      return 'HI_RES_LOSSLESS';
+    }
+    if (q.contains('96') || q.contains('HI_RES')) return 'HI_RES';
+    if (q.contains('LOSSLESS')) return 'LOSSLESS';
+    return null;
+  }
+
+  Widget _buildQualitySelectionCard(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    final item = _downloadItem!;
+    final maxBitDepth = item.maxBitDepth ?? 0;
+    final maxSampleRateKhz = item.maxSampleRate ?? 0.0;
+
+    // Determine which tiers are available based on Qobuz max quality
+    final hasHiRes = maxBitDepth >= 24 && maxSampleRateKhz > 44.1;
+    final hasHiResLossless = maxBitDepth >= 24 && maxSampleRateKhz > 96;
+
+    // Only show card if more than one tier is available
+    if (!hasHiRes && !hasHiResLossless) return const SizedBox.shrink();
+
+    // Figure out currently stored tier from quality string + bit depth
+    final storedTier =
+        _qualityStrToTier(_quality) ??
+        (item.bitDepth != null && item.sampleRate != null
+            ? _qualityTierFromBitSpec(
+                item.bitDepth!,
+                (item.sampleRate! / 1000).toDouble(),
+              )
+            : 'LOSSLESS');
+
+    // Build the list of buttons in priority order (low → high)
+    final tiers = <Map<String, String>>[
+      {'key': 'LOSSLESS', 'label': 'CD Quality', 'sub': '16-bit / 44.1 kHz'},
+      if (hasHiRes && !hasHiResLossless)
+        {'key': 'HI_RES', 'label': 'Hi-Res', 'sub': '24-bit / up to 96 kHz'},
+      if (hasHiResLossless) ...[
+        {'key': 'HI_RES', 'label': 'Hi-Res', 'sub': '24-bit / up to 96 kHz'},
+        {
+          'key': 'HI_RES_LOSSLESS',
+          'label': 'Hi-Res Lossless',
+          'sub': '24-bit / up to 192 kHz',
+        },
+      ],
+    ];
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.high_quality_rounded,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Available Qualities',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: tiers.map((tier) {
+                final isActive = tier['key'] == storedTier;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isActive
+                            ? Border.all(color: colorScheme.primary, width: 2)
+                            : Border.all(
+                                color: colorScheme.outlineVariant,
+                                width: 1,
+                              ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 8,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isActive)
+                            Icon(
+                              Icons.graphic_eq_rounded,
+                              size: 18,
+                              color: colorScheme.primary,
+                            )
+                          else
+                            Icon(
+                              Icons.music_note_outlined,
+                              size: 18,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          const SizedBox(height: 6),
+                          Text(
+                            tier['label']!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isActive
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            tier['sub']!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: isActive
+                                  ? colorScheme.primary
+                                  : colorScheme.outline,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            if (storedTier != 'HI_RES_LOSSLESS' && hasHiResLossless ||
+                storedTier != 'HI_RES' && hasHiRes && !hasHiResLossless) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Currently playing: ${storedTier == 'LOSSLESS'
+                    ? 'CD Quality (16-bit / 44.1 kHz)'
+                    : storedTier == 'HI_RES'
+                    ? 'Hi-Res (24-bit / up to 96 kHz)'
+                    : 'Hi-Res Lossless (24-bit / up to 192 kHz)'}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildFileInfoCard(

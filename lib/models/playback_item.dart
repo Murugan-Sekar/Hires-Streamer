@@ -19,6 +19,8 @@ class PlaybackItem {
 
   // Original track reference for queue operations
   final Track? track;
+  final int? maxBitDepth;
+  final double? maxSampleRate;
 
   const PlaybackItem({
     required this.id,
@@ -36,6 +38,8 @@ class PlaybackItem {
     this.sampleRate = 0,
     this.bitrate = 0,
     this.track,
+    this.maxBitDepth,
+    this.maxSampleRate,
   });
 
   PlaybackItem copyWith({
@@ -46,6 +50,8 @@ class PlaybackItem {
     int? sampleRate,
     int? bitrate,
     int? fileSize,
+    int? maxBitDepth,
+    double? maxSampleRate,
   }) {
     return PlaybackItem(
       id: id,
@@ -63,6 +69,8 @@ class PlaybackItem {
       sampleRate: sampleRate ?? this.sampleRate,
       bitrate: bitrate ?? this.bitrate,
       track: track,
+      maxBitDepth: maxBitDepth ?? this.maxBitDepth,
+      maxSampleRate: maxSampleRate ?? this.maxSampleRate,
     );
   }
 

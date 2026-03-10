@@ -37,9 +37,11 @@ type ExtTrackMetadata struct {
 	SpotifyID     string            `json:"spotify_id,omitempty"`
 	ExternalLinks map[string]string `json:"external_links,omitempty"`
 
-	Label     string `json:"label,omitempty"`
-	Copyright string `json:"copyright,omitempty"`
-	Genre     string `json:"genre,omitempty"`
+	Label          string  `json:"label,omitempty"`
+	Copyright      string  `json:"copyright,omitempty"`
+	Genre          string  `json:"genre,omitempty"`
+	MaxBitDepth    int     `json:"max_bit_depth,omitempty"`
+	MaxSampleRate  float64 `json:"max_sample_rate,omitempty"`
 }
 
 func (t *ExtTrackMetadata) ResolvedCoverURL() string {
@@ -98,6 +100,9 @@ type ExtDownloadResult struct {
 	SampleRate   int    `json:"sample_rate,omitempty"`
 	ErrorMessage string `json:"error_message,omitempty"`
 	ErrorType    string `json:"error_type,omitempty"`
+
+	MaxBitDepth   int     `json:"max_bit_depth,omitempty"`
+	MaxSampleRate float64 `json:"max_sample_rate,omitempty"`
 
 	Title       string `json:"title,omitempty"`
 	Artist      string `json:"artist,omitempty"`
@@ -1115,16 +1120,18 @@ func tryBuiltInProvider(providerID string, req DownloadRequest) (*DownloadRespon
 		qobuzResult, qobuzErr := downloadFromQobuz(req)
 		if qobuzErr == nil {
 			result = DownloadResult{
-				FilePath:    qobuzResult.FilePath,
-				BitDepth:    qobuzResult.BitDepth,
-				SampleRate:  qobuzResult.SampleRate,
-				Title:       qobuzResult.Title,
-				Artist:      qobuzResult.Artist,
-				Album:       qobuzResult.Album,
-				ReleaseDate: qobuzResult.ReleaseDate,
-				TrackNumber: qobuzResult.TrackNumber,
-				DiscNumber:  qobuzResult.DiscNumber,
-				ISRC:        qobuzResult.ISRC,
+				FilePath:      qobuzResult.FilePath,
+				BitDepth:      qobuzResult.BitDepth,
+				SampleRate:    qobuzResult.SampleRate,
+				MaxBitDepth:   qobuzResult.MaxBitDepth,
+				MaxSampleRate: qobuzResult.MaxSampleRate,
+				Title:         qobuzResult.Title,
+				Artist:        qobuzResult.Artist,
+				Album:         qobuzResult.Album,
+				ReleaseDate:   qobuzResult.ReleaseDate,
+				TrackNumber:   qobuzResult.TrackNumber,
+				DiscNumber:    qobuzResult.DiscNumber,
+				ISRC:          qobuzResult.ISRC,
 			}
 		}
 		err = qobuzErr

@@ -34,7 +34,7 @@ class HistoryDatabase {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onConfigure: (db) async {
         await db.rawQuery('PRAGMA journal_mode = WAL');
         await db.execute('PRAGMA synchronous = NORMAL');
@@ -74,7 +74,9 @@ class HistoryDatabase {
         sample_rate INTEGER,
         genre TEXT,
         label TEXT,
-        copyright TEXT
+        copyright TEXT,
+        max_bit_depth INTEGER,
+        max_sample_rate REAL
       )
     ''');
 
@@ -134,6 +136,16 @@ class HistoryDatabase {
         _log.i('Added file_size column to history');
       } catch (e) {
         _log.w('History file_size column might already exist: $e');
+      }
+    }
+    if (oldVersion < 6) {
+      for (final col in ['max_bit_depth INTEGER', 'max_sample_rate REAL']) {
+        try {
+          await db.execute('ALTER TABLE history ADD COLUMN $col');
+          _log.i('Added $col to history');
+        } catch (e) {
+          _log.w('Column $col might already exist: $e');
+        }
       }
     }
   }
@@ -324,6 +336,8 @@ class HistoryDatabase {
       'label': json['label'],
       'copyright': json['copyright'],
       'file_size': json['fileSize'],
+      'max_bit_depth': json['maxBitDepth'],
+      'max_sample_rate': json['maxSampleRate'],
     };
   }
 
@@ -358,6 +372,8 @@ class HistoryDatabase {
       'label': row['label'],
       'copyright': row['copyright'],
       'fileSize': row['file_size'],
+      'maxBitDepth': row['max_bit_depth'],
+      'maxSampleRate': row['max_sample_rate'],
     };
   }
 

@@ -1,4 +1,4 @@
-package com.peter.hirresstreamer
+package com.peter.hiresstreamer
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -26,9 +26,9 @@ class DownloadService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val WAKELOCK_TAG = "HiResStreamer:DownloadWakeLock"
         
-        const val ACTION_START = "com.peter.hirresstreamer.action.START_DOWNLOAD"
-        const val ACTION_STOP = "com.peter.hirresstreamer.action.STOP_DOWNLOAD"
-        const val ACTION_UPDATE_PROGRESS = "com.peter.hirresstreamer.action.UPDATE_PROGRESS"
+        const val ACTION_START = "com.peter.hiresstreamer.action.START_DOWNLOAD"
+        const val ACTION_STOP = "com.peter.hiresstreamer.action.STOP_DOWNLOAD"
+        const val ACTION_UPDATE_PROGRESS = "com.peter.hiresstreamer.action.UPDATE_PROGRESS"
         
         const val EXTRA_TRACK_NAME = "track_name"
         const val EXTRA_ARTIST_NAME = "artist_name"

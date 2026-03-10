@@ -876,8 +876,8 @@ func (q *QobuzDownloader) GetDownloadURL(trackID int64, quality string) (string,
 	}
 
 	currentQuality := qualityCode
-	if currentQuality == "27" {
-		GoLog("[Qobuz] Hi-res (27) failed, trying 24-bit (7)...\n")
+	if currentQuality == "6" {
+		GoLog("[Qobuz] Lossless (6) failed, trying 24-bit (7)...\n")
 		downloadURL, err = downloadFunc("7")
 		if err == nil {
 			return downloadURL, nil
@@ -886,8 +886,8 @@ func (q *QobuzDownloader) GetDownloadURL(trackID int64, quality string) (string,
 	}
 
 	if currentQuality == "7" {
-		GoLog("[Qobuz] 24-bit failed, trying 16-bit (6)...\n")
-		downloadURL, err = downloadFunc("6")
+		GoLog("[Qobuz] 24-bit failed, trying Hi-res (27)...\n")
+		downloadURL, err = downloadFunc("27")
 		if err == nil {
 			return downloadURL, nil
 		}
@@ -976,17 +976,19 @@ func (q *QobuzDownloader) DownloadFile(downloadURL, outputPath string, outputFD 
 }
 
 type QobuzDownloadResult struct {
-	FilePath    string
-	BitDepth    int
-	SampleRate  int
-	Title       string
-	Artist      string
-	Album       string
-	ReleaseDate string
-	TrackNumber int
-	DiscNumber  int
-	ISRC        string
-	LyricsLRC   string
+	FilePath      string
+	BitDepth      int
+	SampleRate    int
+	MaxBitDepth   int
+	MaxSampleRate float64
+	Title         string
+	Artist        string
+	Album         string
+	ReleaseDate   string
+	TrackNumber   int
+	DiscNumber    int
+	ISRC          string
+	LyricsLRC     string
 }
 
 func resolveQobuzTrackForRequest(req DownloadRequest, downloader *QobuzDownloader, logPrefix string) (*QobuzTrack, error) {
@@ -1270,16 +1272,18 @@ func downloadFromQobuz(req DownloadRequest) (QobuzDownloadResult, error) {
 	}
 
 	return QobuzDownloadResult{
-		FilePath:    outputPath,
-		BitDepth:    actualBitDepth,
-		SampleRate:  actualSampleRate,
-		Title:       track.Title,
-		Artist:      track.Performer.Name,
-		Album:       track.Album.Title,
-		ReleaseDate: track.Album.ReleaseDate,
-		TrackNumber: actualTrackNumber,
-		DiscNumber:  req.DiscNumber,
-		ISRC:        track.ISRC,
-		LyricsLRC:   lyricsLRC,
+		FilePath:      outputPath,
+		BitDepth:      actualBitDepth,
+		SampleRate:    actualSampleRate,
+		MaxBitDepth:   track.MaximumBitDepth,
+		MaxSampleRate: track.MaximumSamplingRate,
+		Title:         track.Title,
+		Artist:        track.Performer.Name,
+		Album:         track.Album.Title,
+		ReleaseDate:   track.Album.ReleaseDate,
+		TrackNumber:   actualTrackNumber,
+		DiscNumber:    req.DiscNumber,
+		ISRC:          track.ISRC,
+		LyricsLRC:     lyricsLRC,
 	}, nil
 }

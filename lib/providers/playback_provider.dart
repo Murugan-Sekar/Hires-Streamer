@@ -102,6 +102,9 @@ class PlaybackState {
   final bool shuffle;
   final RepeatMode repeatMode;
 
+  // Quality Selection
+  final String? requestedQuality;
+
   // Lyrics
   final LyricsData? lyrics;
   final bool lyricsLoading;
@@ -123,6 +126,7 @@ class PlaybackState {
     this.repeatMode = RepeatMode.off,
     this.lyrics,
     this.lyricsLoading = false,
+    this.requestedQuality,
   });
 
   bool get hasNext => queue.isNotEmpty && currentIndex < queue.length - 1;
@@ -148,6 +152,8 @@ class PlaybackState {
     LyricsData? lyrics,
     bool clearLyrics = false,
     bool? lyricsLoading,
+    String? requestedQuality,
+    bool clearRequestedQuality = false,
   }) {
     return PlaybackState(
       currentItem: clearCurrentItem ? null : (currentItem ?? this.currentItem),
@@ -166,6 +172,9 @@ class PlaybackState {
       repeatMode: repeatMode ?? this.repeatMode,
       lyrics: clearLyrics ? null : (lyrics ?? this.lyrics),
       lyricsLoading: lyricsLoading ?? this.lyricsLoading,
+      requestedQuality: clearRequestedQuality
+          ? null
+          : (requestedQuality ?? this.requestedQuality),
     );
   }
 }
@@ -583,7 +592,7 @@ class PlaybackController extends Notifier<PlaybackState> {
               onToggleLove: _handleNotificationToggleLove,
             ),
             config: const audio_service.AudioServiceConfig(
-              androidNotificationChannelId: 'com.peter.hirresstreamer.playback',
+              androidNotificationChannelId: 'com.peter.hiresstreamer.playback',
               androidNotificationChannelName: 'Music Playback',
               androidNotificationIcon: 'drawable/ic_stat_logo',
               androidNotificationOngoing: true,
@@ -983,6 +992,8 @@ class PlaybackController extends Notifier<PlaybackState> {
     'bitDepth': item.bitDepth,
     'sampleRate': item.sampleRate,
     'bitrate': item.bitrate,
+    'maxBitDepth': item.maxBitDepth,
+    'maxSampleRate': item.maxSampleRate,
     if (item.track != null) 'track': item.track!.toJson(),
   };
 
@@ -1013,6 +1024,8 @@ class PlaybackController extends Notifier<PlaybackState> {
       bitDepth: (json['bitDepth'] as num?)?.toInt() ?? 0,
       sampleRate: (json['sampleRate'] as num?)?.toInt() ?? 0,
       bitrate: (json['bitrate'] as num?)?.toInt() ?? 0,
+      maxBitDepth: (json['maxBitDepth'] as num?)?.toInt(),
+      maxSampleRate: (json['maxSampleRate'] as num?)?.toDouble(),
       track: track,
     );
   }
@@ -1298,6 +1311,8 @@ class PlaybackController extends Notifier<PlaybackState> {
       sourceUri: '',
       durationMs: _trackDurationMs(track),
       track: track,
+      maxBitDepth: track.maxBitDepth,
+      maxSampleRate: track.maxSampleRate,
     );
   }
 
@@ -1419,6 +1434,25 @@ class PlaybackController extends Notifier<PlaybackState> {
     state = state.copyWith(queue: newQueue, currentIndex: newIndex);
     unawaited(_savePlaybackSnapshot());
     if (state.shuffle) _regenerateShuffleOrder();
+  }
+
+  Future<void> switchQuality(String quality) async {
+    final item = state.currentItem;
+    if (item == null || item.isLocal) return;
+
+    _log.i('Switching quality to $quality');
+    final resumePosition = state.position;
+
+    // Set requestedQuality for immediate UI feedback
+    state = state.copyWith(requestedQuality: quality);
+
+    // Re-resolve track with new quality
+    await _playQueueIndex(
+      state.currentIndex,
+      qualityOverride: quality,
+      resumePosition: resumePosition,
+      isManualQualitySwitch: true,
+    );
   }
 
   // ─── Public: clear queue ─────────────────────────────────────────────────
@@ -1593,7 +1627,12 @@ class PlaybackController extends Notifier<PlaybackState> {
 
   // ─── Internal ────────────────────────────────────────────────────────────
 
-  Future<void> _playQueueIndex(int index) async {
+  Future<void> _playQueueIndex(
+    int index, {
+    String? qualityOverride,
+    Duration? resumePosition,
+    bool isManualQualitySwitch = false,
+  }) async {
     if (index < 0 || index >= state.queue.length) return;
 
     // Stop current playback to prevent old audio bleeding into loading states
@@ -1603,7 +1642,8 @@ class PlaybackController extends Notifier<PlaybackState> {
     final previousItem = state.currentItem;
     final requestEpoch = _startNewPlayRequest();
     _resetPrefetchCycleState();
-    final pendingResumePosition = _pendingResumePositionForIndex(index);
+    final pendingResumePosition =
+        resumePosition ?? _pendingResumePositionForIndex(index);
     var item = state.queue[index];
     if (previousItem != null &&
         _trackKeyFromPlaybackItem(previousItem) !=
@@ -1638,6 +1678,8 @@ class PlaybackController extends Notifier<PlaybackState> {
       isLoading: true,
       isBuffering: true,
       isPlaying: false,
+      requestedQuality: isManualQualitySwitch ? qualityOverride : null,
+      clearRequestedQuality: !isManualQualitySwitch,
       seekSupported: _inferSeekSupportedForQueueItem(item),
       position:
           pendingResumePosition != null && pendingResumePosition > Duration.zero
@@ -1676,7 +1718,7 @@ class PlaybackController extends Notifier<PlaybackState> {
             deezerId: item.track!.deezerId ?? '',
             isrc: item.track!.isrc ?? '',
             service: defaultService,
-            quality: 'HI_RES_LOSSLESS',
+            quality: qualityOverride ?? 'LOSSLESS',
             outputDir: streamCacheDir.path,
             filenameFormat: 'stream_$tempId.flac',
             itemId: tempId,
@@ -1714,6 +1756,14 @@ class PlaybackController extends Notifier<PlaybackState> {
               return 0;
             }
 
+            double parseSafeDouble(dynamic val) {
+              if (val == null) return 0.0;
+              if (val is double) return val;
+              if (val is int) return val.toDouble();
+              if (val is String) return double.tryParse(val) ?? 0.0;
+              return 0.0;
+            }
+
             item = item.copyWith(
               sourceUri: filePath,
               format: response['format'] ?? 'flac',
@@ -1735,12 +1785,20 @@ class PlaybackController extends Notifier<PlaybackState> {
                     response['bits_per_sample'] ??
                     0,
               ),
+              maxBitDepth: parseSafeInt(response['max_bit_depth']),
+              maxSampleRate: parseSafeDouble(response['max_sample_rate']),
               fileSize: resolvedFileSize,
               service: payload.service,
             );
             final updatedQueue = List<PlaybackItem>.from(state.queue);
             updatedQueue[index] = item;
-            state = state.copyWith(queue: updatedQueue);
+            state = state.copyWith(
+              queue: updatedQueue,
+              currentItem: index == state.currentIndex
+                  ? item
+                  : state.currentItem,
+              clearRequestedQuality: true,
+            );
           } else {
             throw Exception(
               response['error'] ?? 'Unknown streaming resolution error.',
@@ -3855,7 +3913,34 @@ class PlaybackController extends Notifier<PlaybackState> {
   }
 
   Future<void> _prefetchQueueIndex(int index) async {
-    if (index < 0) return;
+    if (index < 0 || index >= state.queue.length) return;
+
+    final item = state.queue[index];
+    if (item.track == null || item.isLocal) return;
+
+    final track = item.track!;
+    final settings = ref.read(settingsProvider);
+    final service = _resolveService(settings.defaultService);
+
+    _log.i(
+      'Prefetching track at index $index: ${track.name} (service: $service)',
+    );
+
+    try {
+      await PlatformBridge.preWarmTrackCache([
+        {
+          'isrc': track.isrc ?? '',
+          'track_name': track.name,
+          'artist_name': track.artistName,
+          'spotify_id': track.source == 'spotify-web' || track.id.length == 22
+              ? track.id
+              : '',
+          'service': service,
+        },
+      ]);
+    } catch (e) {
+      _log.w('Prefetch failed for index $index: $e');
+    }
   }
 
   String _resolveService(String defaultService) {

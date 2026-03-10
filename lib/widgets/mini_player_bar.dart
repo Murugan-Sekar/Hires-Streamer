@@ -1298,12 +1298,24 @@ class _AudioQualityFooter extends ConsumerWidget {
     required this.onQueuePressed,
   });
 
+  String _currentQualityTier(PlaybackItem displayItem) {
+    if (displayItem.bitDepth >= 24 && displayItem.sampleRate > 96000)
+      return 'HI_RES_LOSSLESS';
+    if (displayItem.bitDepth > 16) return 'HI_RES';
+    return 'LOSSLESS';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showMetadata =
-        item.format.isNotEmpty || item.bitrate > 0 || item.sampleRate > 0;
+    final playbackState = ref.watch(playbackProvider);
+    final displayItem = playbackState.currentItem ?? item;
 
-    final format = item.format.toLowerCase();
+    final showMetadata =
+        displayItem.format.isNotEmpty ||
+        displayItem.bitrate > 0 ||
+        displayItem.sampleRate > 0;
+
+    final format = displayItem.format.toLowerCase();
     final isLossless =
         format == 'flac' ||
         format == 'alac' ||
@@ -1312,14 +1324,37 @@ class _AudioQualityFooter extends ConsumerWidget {
         format == 'dsf' ||
         format == 'dff';
 
-    final sampleRateKhz = item.sampleRate > 0
-        ? '${(item.sampleRate / 1000).toStringAsFixed(item.sampleRate % 1000 == 0 ? 0 : 1)} kHz'
+    final sampleRateKhz = displayItem.sampleRate > 0
+        ? '${(displayItem.sampleRate / 1000).toStringAsFixed(displayItem.sampleRate % 1000 == 0 ? 0 : 1)} kHz'
         : '';
-    final bitDepthStr = item.bitDepth > 0 ? '${item.bitDepth} bit' : '';
-    final bitrateStr = item.bitrate > 0 ? '${item.bitrate} kbps' : '';
-    final fileSizeStr = item.fileSize > 0
-        ? '${(item.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB'
+    final bitDepthStr = displayItem.bitDepth > 0
+        ? '${displayItem.bitDepth} bit'
         : '';
+    final bitrateStr = displayItem.bitrate > 0
+        ? '${displayItem.bitrate} kbps'
+        : '';
+    final fileSizeStr = displayItem.fileSize > 0
+        ? '${(displayItem.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB'
+        : '';
+
+    final maxBitDepth = displayItem.maxBitDepth ?? 0;
+    final maxSampleRateKhz = displayItem.maxSampleRate ?? 0.0;
+    final service = displayItem.service.toLowerCase();
+
+    // Always show all tiers for Tidal and Qobuz as they generally support them
+    final isHiResCapableService = service == 'tidal' || service == 'qobuz';
+
+    final hasHiRes = maxBitDepth > 16 || isHiResCapableService;
+    final hasHiResLossless =
+        (maxBitDepth >= 24 && maxSampleRateKhz > 96) || isHiResCapableService;
+    final currentTier =
+        playbackState.requestedQuality ?? _currentQualityTier(displayItem);
+
+    final tiers = <Map<String, String>>[
+      {'key': 'LOSSLESS', 'label': '16-bit'},
+      if (hasHiRes) {'key': 'HI_RES', 'label': '24-bit 96k'},
+      if (hasHiResLossless) {'key': 'HI_RES_LOSSLESS', 'label': '24-bit 192k'},
+    ];
 
     return SizedBox(
       width: double.infinity,
@@ -1381,6 +1416,7 @@ class _AudioQualityFooter extends ConsumerWidget {
                 ],
               ),
             ),
+
           if (showMetadata) const SizedBox(height: 12),
           Text(
             'PLAYBACK SOURCE: ${item.service}'.toUpperCase(),
@@ -1391,6 +1427,62 @@ class _AudioQualityFooter extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+
+          if (!item.isLocal && (isHiResCapableService || tiers.length > 1)) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: tiers.map((tier) {
+                  final isActive = tier['key'] == currentTier;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: InkWell(
+                      onTap: isActive
+                          ? null
+                          : () => ref
+                                .read(playbackProvider.notifier)
+                                .switchQuality(tier['key']!),
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? colorScheme.primary.withValues(alpha: 0.15)
+                              : colorScheme.onSurface.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isActive
+                                ? colorScheme.primary
+                                : Colors.transparent,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          tier['label']!,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: isActive
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

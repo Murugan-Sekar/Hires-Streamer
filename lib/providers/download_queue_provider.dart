@@ -53,6 +53,8 @@ class DownloadHistoryItem {
   final String? quality;
   final int? bitDepth;
   final int? sampleRate;
+  final int? maxBitDepth;
+  final double? maxSampleRate;
   final String? genre;
   final String? label;
   final String? copyright;
@@ -82,6 +84,8 @@ class DownloadHistoryItem {
     this.quality,
     this.bitDepth,
     this.sampleRate,
+    this.maxBitDepth,
+    this.maxSampleRate,
     this.genre,
     this.label,
     this.copyright,
@@ -112,6 +116,8 @@ class DownloadHistoryItem {
     'quality': quality,
     'bitDepth': bitDepth,
     'sampleRate': sampleRate,
+    'maxBitDepth': maxBitDepth,
+    'maxSampleRate': maxSampleRate,
     'genre': genre,
     'label': label,
     'copyright': copyright,
@@ -143,6 +149,8 @@ class DownloadHistoryItem {
         quality: json['quality'] as String?,
         bitDepth: json['bitDepth'] as int?,
         sampleRate: json['sampleRate'] as int?,
+        maxBitDepth: (json['maxBitDepth'] as num?)?.toInt(),
+        maxSampleRate: (json['maxSampleRate'] as num?)?.toDouble(),
         genre: json['genre'] as String?,
         label: json['label'] as String?,
         copyright: json['copyright'] as String?,
@@ -170,6 +178,8 @@ class DownloadHistoryItem {
     String? quality,
     int? bitDepth,
     int? sampleRate,
+    int? maxBitDepth,
+    double? maxSampleRate,
     String? genre,
     String? label,
     String? copyright,
@@ -199,6 +209,8 @@ class DownloadHistoryItem {
       quality: quality ?? this.quality,
       bitDepth: bitDepth ?? this.bitDepth,
       sampleRate: sampleRate ?? this.sampleRate,
+      maxBitDepth: maxBitDepth ?? this.maxBitDepth,
+      maxSampleRate: maxSampleRate ?? this.maxSampleRate,
       genre: genre ?? this.genre,
       label: label ?? this.label,
       copyright: copyright ?? this.copyright,
@@ -4232,6 +4244,9 @@ class DownloadQueueNotifier extends Notifier<DownloadQueueState> {
           final backendDiscNum = result['disc_number'] as int?;
           final backendBitDepth = result['actual_bit_depth'] as int?;
           final backendSampleRate = result['actual_sample_rate'] as int?;
+          final backendMaxBitDepth = (result['max_bit_depth'] as num?)?.toInt();
+          final backendMaxSampleRate = (result['max_sample_rate'] as num?)
+              ?.toDouble();
           final backendISRC = result['isrc'] as String?;
           final backendGenre = result['genre'] as String?;
           final backendLabel = result['label'] as String?;
@@ -4306,6 +4321,8 @@ class DownloadQueueNotifier extends Notifier<DownloadQueueState> {
                   quality: actualQuality,
                   bitDepth: historyBitDepth,
                   sampleRate: historySampleRate,
+                  maxBitDepth: backendMaxBitDepth,
+                  maxSampleRate: backendMaxSampleRate,
                   genre: effectiveGenre,
                   label: effectiveLabel,
                   copyright: effectiveCopyright,

@@ -22,6 +22,8 @@ class Track {
   final String? source;
   final String? albumType;
   final String? itemType;
+  final int? maxBitDepth;
+  final double? maxSampleRate;
 
   const Track({
     required this.id,
@@ -42,21 +44,23 @@ class Track {
     this.source,
     this.albumType,
     this.itemType,
+    this.maxBitDepth,
+    this.maxSampleRate,
   });
 
   bool get isSingle => albumType == 'single' || albumType == 'ep';
-  
+
   bool get isAlbumItem => itemType == 'album';
-  
+
   bool get isPlaylistItem => itemType == 'playlist';
-  
+
   bool get isArtistItem => itemType == 'artist';
-  
+
   bool get isCollection => isAlbumItem || isPlaylistItem || isArtistItem;
 
   factory Track.fromJson(Map<String, dynamic> json) => _$TrackFromJson(json);
   Map<String, dynamic> toJson() => _$TrackToJson(this);
-  
+
   bool get isFromExtension => source != null && source!.isNotEmpty;
 }
 
