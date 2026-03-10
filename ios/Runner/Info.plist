@@ -89,7 +89,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>com.peter.hiresstreamer</string>
+			<string>com.parker.hiresstreamer</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>HiResStreamer</string>

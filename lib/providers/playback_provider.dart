@@ -583,7 +583,7 @@ class PlaybackController extends Notifier<PlaybackState> {
               onToggleLove: _handleNotificationToggleLove,
             ),
             config: const audio_service.AudioServiceConfig(
-              androidNotificationChannelId: 'com.peter.hiresstreamer.playback',
+              androidNotificationChannelId: 'com.parker.hiresstreamer.playback',
               androidNotificationChannelName: 'Music Playback',
               androidNotificationIcon: 'drawable/ic_stat_logo',
               androidNotificationOngoing: true,

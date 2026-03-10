@@ -6,12 +6,12 @@ import 'package:hires_streamer/utils/logger.dart';
 final _log = AppLogger('PlatformBridge');
 
 class PlatformBridge {
-  static const _channel = MethodChannel('com.peter.hiresstreamer/backend');
+  static const _channel = MethodChannel('com.parker.hiresstreamer/backend');
   static const _downloadProgressEvents = EventChannel(
-    'com.peter.hiresstreamer/download_progress_stream',
+    'com.parker.hiresstreamer/download_progress_stream',
   );
   static const _libraryScanProgressEvents = EventChannel(
-    'com.peter.hiresstreamer/library_scan_progress_stream',
+    'com.parker.hiresstreamer/library_scan_progress_stream',
   );
 
   static Future<Map<String, dynamic>> parseSpotifyUrl(String url) async {
