@@ -19,6 +19,9 @@ import 'package:hires_streamer/services/platform_bridge.dart';
 import 'package:hires_streamer/services/shell_navigation_service.dart';
 import 'package:hires_streamer/services/share_intent_service.dart';
 import 'package:hires_streamer/services/update_checker.dart';
+import 'package:hires_streamer/services/notification_service.dart';
+import 'package:hires_streamer/constants/app_info.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 import 'package:hires_streamer/widgets/update_dialog.dart';
 import 'package:hires_streamer/widgets/mini_player_bar.dart';
 import 'package:hires_streamer/utils/logger.dart';
@@ -32,11 +35,13 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> {
+class _MainShellState extends ConsumerState<MainShell>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
   late PageController _pageController;
   bool _hasCheckedUpdate = false;
   StreamSubscription<String>? _shareSubscription;
+  StreamSubscription? _notificationSub;
   DateTime? _lastBackPress;
   final GlobalKey<NavigatorState> _homeTabNavigatorKey =
       ShellNavigationService.homeTabNavigatorKey;
@@ -48,11 +53,29 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(initialPage: _currentIndex);
     ShellNavigationService.syncState(
       currentTabIndex: _currentIndex,
       showStoreTab: false,
     );
+
+    _notificationSub = NotificationService.notificationTaps.stream.listen((
+      payload,
+    ) {
+      if (payload == 'update_progress') {
+        final updateState = ref.read(updateProvider);
+        if (updateState.isDownloading && updateState.updateInfo != null) {
+          if (!mounted) return;
+          showUpdateDialog(
+            context,
+            updateInfo: updateState.updateInfo!,
+            onDisableUpdates: () {},
+          );
+        }
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
       _setupShareListener();
@@ -221,7 +244,9 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _shareSubscription?.cancel();
+    _notificationSub?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -499,6 +524,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       child: Scaffold(
         body: Column(
           children: [
+            const _UpdateProgressBar(),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -745,5 +771,131 @@ class _SpinIconState extends State<SpinIcon>
   @override
   Widget build(BuildContext context) {
     return RotationTransition(turns: _rotationAnimation, child: widget.child);
+  }
+}
+
+class _UpdateProgressBar extends ConsumerWidget {
+  const _UpdateProgressBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final updateState = ref.watch(updateProvider);
+    if (!updateState.isDownloading || updateState.updateInfo == null) {
+      return const SizedBox.shrink();
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Card(
+          elevation: 8,
+          clipBehavior: Clip.antiAlias,
+          shadowColor: Colors.black26,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: InkWell(
+            onTap: () {
+              if (!context.mounted) return;
+              showUpdateDialog(
+                context,
+                updateInfo: updateState.updateInfo!,
+                onDisableUpdates: () {},
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.system_update_rounded,
+                          color: colorScheme.onPrimaryContainer,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Downloading Update',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'v${AppInfo.version} → v${updateState.updateInfo!.version}',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${(updateState.progress * 100).toInt()}%',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          ref.read(updateProvider.notifier).cancelDownload();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Update download cancelled'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: updateState.progress,
+                      minHeight: 6,
+                      backgroundColor: colorScheme.primary.withValues(
+                        alpha: 0.1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    updateState.statusText,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

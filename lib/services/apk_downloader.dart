@@ -9,6 +9,8 @@ final _log = AppLogger('ApkDownloader');
 typedef ProgressCallback = void Function(int received, int total);
 
 class ApkDownloader {
+  static http.Client? _activeClient;
+  static bool _isCancelled = false;
   static Future<String?> downloadApk({
     required String url,
     required String version,
@@ -21,6 +23,8 @@ class ApkDownloader {
     }
 
     final client = http.Client();
+    _activeClient = client;
+    _isCancelled = false;
     IOSink? sink;
 
     try {
@@ -60,11 +64,27 @@ class ApkDownloader {
       _log.i('Downloaded to: $filePath');
       return filePath;
     } catch (e) {
+      if (_isCancelled) {
+        _log.i('Download was cancelled');
+        return null; // Return null gracefully on cancel
+      }
       _log.e('Error: $e');
       return null;
     } finally {
       await sink?.close();
       client.close();
+      if (_activeClient == client) {
+        _activeClient = null;
+      }
+    }
+  }
+
+  static void cancelDownload() {
+    if (_activeClient != null) {
+      _isCancelled = true;
+      _activeClient!.close();
+      _activeClient = null;
+      _log.i('Download cancelled by user');
     }
   }
 

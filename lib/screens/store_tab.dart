@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hires_streamer/l10n/l10n.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 import 'package:hires_streamer/providers/store_provider.dart';
 import 'package:hires_streamer/widgets/settings_group.dart';
 import 'package:hires_streamer/screens/store/extension_details_screen.dart';
@@ -68,214 +69,225 @@ class _StoreTabState extends ConsumerState<StoreTab> {
       );
     }
     final colorScheme = Theme.of(context).colorScheme;
+    final updateState = ref.watch(updateProvider);
+    final isDownloadingUpdate =
+        updateState.isDownloading && updateState.updateInfo != null;
     final topPadding = normalizedHeaderTopPadding(context);
+    final headerTopMargin = isDownloadingUpdate
+        ? 0.0
+        : MediaQuery.paddingOf(context).top + topPadding + 64.0;
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(storeProvider.notifier).refresh(forceRefresh: true),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 120 + topPadding,
-              collapsedHeight: kToolbarHeight,
-              floating: false,
-              pinned: true,
-              backgroundColor: colorScheme.surface,
-              surfaceTintColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              flexibleSpace: LayoutBuilder(
-                builder: (context, constraints) {
-                  final maxHeight = 120 + topPadding;
-                  final minHeight = kToolbarHeight + topPadding;
-                  final expandRatio =
-                      ((constraints.maxHeight - minHeight) /
-                              (maxHeight - minHeight))
-                          .clamp(0.0, 1.0);
-
-                  return FlexibleSpaceBar(
-                    expandedTitleScale: 1.0,
-                    titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
-                    title: Text(
-                      context.l10n.storeTitle,
-                      style: TextStyle(
-                        fontSize: 20 + (14 * expandRatio),
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  );
-                },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            color: colorScheme.surface,
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: headerTopMargin,
+              bottom: 8,
+              left: 24,
+              right: 24,
+            ),
+            child: Text(
+              context.l10n.storeTitle,
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(storeProvider.notifier).refresh(forceRefresh: true),
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _searchController,
+                        builder: (context, value, _) {
+                          return TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: context.l10n.storeSearch,
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: value.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        ref
+                                            .read(storeProvider.notifier)
+                                            .setSearchQuery('');
+                                      },
+                                    )
+                                  : null,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(28),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Color.alphaBlend(
+                                      Colors.white.withValues(alpha: 0.08),
+                                      colorScheme.surface,
+                                    )
+                                  : colorScheme.surfaceContainerHighest,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              ref
+                                  .read(storeProvider.notifier)
+                                  .setSearchQuery(value);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _searchController,
-                  builder: (context, value, _) {
-                    return TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: context.l10n.storeSearch,
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: value.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  ref
-                                      .read(storeProvider.notifier)
-                                      .setSearchQuery('');
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor:
-                            Theme.of(context).brightness == Brightness.dark
-                            ? Color.alphaBlend(
-                                Colors.white.withValues(alpha: 0.08),
-                                colorScheme.surface,
-                              )
-                            : colorScheme.surfaceContainerHighest,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                  SliverToBoxAdapter(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          _CategoryChip(
+                            label: context.l10n.storeFilterAll,
+                            icon: Icons.apps,
+                            isSelected: selectedCategory == null,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(null),
+                          ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: context.l10n.storeFilterMetadata,
+                            icon: Icons.label_outline,
+                            isSelected:
+                                selectedCategory == StoreCategory.metadata,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(StoreCategory.metadata),
+                          ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: context.l10n.storeFilterDownload,
+                            icon: Icons.download_outlined,
+                            isSelected:
+                                selectedCategory == StoreCategory.download,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(StoreCategory.download),
+                          ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: context.l10n.storeFilterUtility,
+                            icon: Icons.build_outlined,
+                            isSelected:
+                                selectedCategory == StoreCategory.utility,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(StoreCategory.utility),
+                          ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: context.l10n.storeFilterLyrics,
+                            icon: Icons.lyrics_outlined,
+                            isSelected:
+                                selectedCategory == StoreCategory.lyrics,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(StoreCategory.lyrics),
+                          ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: context.l10n.storeFilterIntegration,
+                            icon: Icons.link,
+                            isSelected:
+                                selectedCategory == StoreCategory.integration,
+                            onTap: () => ref
+                                .read(storeProvider.notifier)
+                                .setCategory(StoreCategory.integration),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  if (isLoading && extensions.isEmpty)
+                    const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (error != null && extensions.isEmpty)
+                    SliverFillRemaining(
+                      child: _buildErrorState(error, colorScheme),
+                    )
+                  else if (filteredExtensions.isEmpty)
+                    SliverFillRemaining(
+                      child: _buildEmptyState(
+                        hasFilters:
+                            searchQuery.isNotEmpty || selectedCategory != null,
+                        colorScheme: colorScheme,
+                      ),
+                    )
+                  else ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Text(
+                          '${filteredExtensions.length} ${filteredExtensions.length == 1 ? 'extension' : 'extensions'}',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                       ),
-                      onChanged: (value) {
-                        ref.read(storeProvider.notifier).setSearchQuery(value);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
+                    ),
 
-            SliverToBoxAdapter(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    _CategoryChip(
-                      label: context.l10n.storeFilterAll,
-                      icon: Icons.apps,
-                      isSelected: selectedCategory == null,
-                      onTap: () =>
-                          ref.read(storeProvider.notifier).setCategory(null),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SettingsGroup(
+                          children: filteredExtensions.asMap().entries.map((
+                            entry,
+                          ) {
+                            final index = entry.key;
+                            final ext = entry.value;
+                            return _ExtensionItem(
+                              extension: ext,
+                              showDivider:
+                                  index < filteredExtensions.length - 1,
+                              isDownloading: downloadingId == ext.id,
+                              onInstall: () => _installExtension(ext),
+                              onUpdate: () => _updateExtension(ext),
+                              onTap: () => _showExtensionDetails(ext),
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    _CategoryChip(
-                      label: context.l10n.storeFilterMetadata,
-                      icon: Icons.label_outline,
-                      isSelected: selectedCategory == StoreCategory.metadata,
-                      onTap: () => ref
-                          .read(storeProvider.notifier)
-                          .setCategory(StoreCategory.metadata),
-                    ),
-                    const SizedBox(width: 8),
-                    _CategoryChip(
-                      label: context.l10n.storeFilterDownload,
-                      icon: Icons.download_outlined,
-                      isSelected: selectedCategory == StoreCategory.download,
-                      onTap: () => ref
-                          .read(storeProvider.notifier)
-                          .setCategory(StoreCategory.download),
-                    ),
-                    const SizedBox(width: 8),
-                    _CategoryChip(
-                      label: context.l10n.storeFilterUtility,
-                      icon: Icons.build_outlined,
-                      isSelected: selectedCategory == StoreCategory.utility,
-                      onTap: () => ref
-                          .read(storeProvider.notifier)
-                          .setCategory(StoreCategory.utility),
-                    ),
-                    const SizedBox(width: 8),
-                    _CategoryChip(
-                      label: context.l10n.storeFilterLyrics,
-                      icon: Icons.lyrics_outlined,
-                      isSelected: selectedCategory == StoreCategory.lyrics,
-                      onTap: () => ref
-                          .read(storeProvider.notifier)
-                          .setCategory(StoreCategory.lyrics),
-                    ),
-                    const SizedBox(width: 8),
-                    _CategoryChip(
-                      label: context.l10n.storeFilterIntegration,
-                      icon: Icons.link,
-                      isSelected: selectedCategory == StoreCategory.integration,
-                      onTap: () => ref
-                          .read(storeProvider.notifier)
-                          .setCategory(StoreCategory.integration),
-                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
                   ],
-                ),
-              ),
-            ),
-
-            if (isLoading && extensions.isEmpty)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (error != null && extensions.isEmpty)
-              SliverFillRemaining(child: _buildErrorState(error, colorScheme))
-            else if (filteredExtensions.isEmpty)
-              SliverFillRemaining(
-                child: _buildEmptyState(
-                  hasFilters:
-                      searchQuery.isNotEmpty || selectedCategory != null,
-                  colorScheme: colorScheme,
-                ),
-              )
-            else ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Text(
-                    '${filteredExtensions.length} ${filteredExtensions.length == 1 ? 'extension' : 'extensions'}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SettingsGroup(
-                    children: filteredExtensions.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final ext = entry.value;
-                      return _ExtensionItem(
-                        extension: ext,
-                        showDivider: index < filteredExtensions.length - 1,
-                        isDownloading: downloadingId == ext.id,
-                        onInstall: () => _installExtension(ext),
-                        onUpdate: () => _updateExtension(ext),
-                        onTap: () => _showExtensionDetails(ext),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            ],
-          ],
-        ),
-      ),
-    );
+                ],
+              ), // CustomScrollView
+            ), // RefreshIndicator
+          ), // Expanded
+        ], // Column children
+      ), // Column
+    ); // Scaffold
   }
 
   Widget _buildErrorState(String error, ColorScheme colorScheme) {

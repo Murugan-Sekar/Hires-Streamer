@@ -58,7 +58,7 @@
 -keep class kotlin.Metadata { *; }
 
 # Keep MainActivity and related classes
--keep class com.parker.hiresstreamer.** { *; }
+-keep class com.peter.hirresstreamer.** { *; }
 
 # Prevent R8 from removing metadata
 -keepattributes *Annotation*

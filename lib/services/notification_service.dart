@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -13,6 +14,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
   bool _notificationPermissionRequested = false;
+
+  static final StreamController<String?> notificationTaps =
+      StreamController<String?>.broadcast();
 
   static const int downloadProgressId = 1;
   static const int updateDownloadId = 2;
@@ -40,7 +44,12 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(settings: initSettings);
+    await _notifications.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: (response) {
+        notificationTaps.add(response.payload);
+      },
+    );
 
     if (Platform.isAndroid) {
       final androidImpl = _notifications
@@ -96,6 +105,7 @@ class NotificationService {
     required String title,
     required String body,
     required NotificationDetails details,
+    String? payload,
   }) async {
     if (!await _ensureNotificationPermission()) return;
 
@@ -105,6 +115,7 @@ class NotificationService {
         title: title,
         body: body,
         notificationDetails: details,
+        payload: payload,
       );
     } on PlatformException catch (e) {
       final isNotificationsNotAllowed =
@@ -519,6 +530,7 @@ class NotificationService {
       title: 'Downloading HiResStreamer v$version',
       body: '$receivedMB / $totalMB MB • $percentage%',
       details: details,
+      payload: 'update_progress',
     );
   }
 

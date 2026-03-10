@@ -1,4 +1,4 @@
-package com.parker.hiresstreamer
+package com.peter.hirresstreamer
 
 import android.app.Activity
 import android.content.Intent
@@ -33,11 +33,11 @@ import java.io.FileOutputStream
 import java.util.Locale
 
 class MainActivity: AudioServiceFragmentActivity() {
-    private val CHANNEL = "com.parker.hiresstreamer/backend"
+    private val CHANNEL = "com.peter.hirresstreamer/backend"
     private val DOWNLOAD_PROGRESS_STREAM_CHANNEL =
-        "com.parker.hiresstreamer/download_progress_stream"
+        "com.peter.hirresstreamer/download_progress_stream"
     private val LIBRARY_SCAN_PROGRESS_STREAM_CHANNEL =
-        "com.parker.hiresstreamer/library_scan_progress_stream"
+        "com.peter.hirresstreamer/library_scan_progress_stream"
     private val STREAM_POLLING_INTERVAL_MS = 800L
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pendingSafTreeResult: MethodChannel.Result? = null

@@ -22,6 +22,7 @@ import 'package:hires_streamer/providers/library_collections_provider.dart';
 import 'package:hires_streamer/providers/settings_provider.dart';
 import 'package:hires_streamer/providers/local_library_provider.dart';
 import 'package:hires_streamer/providers/playback_provider.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 import 'package:hires_streamer/services/library_database.dart';
 import 'package:hires_streamer/services/history_database.dart';
 import 'package:hires_streamer/services/downloaded_embedded_cover_resolver.dart';
@@ -2755,7 +2756,13 @@ class _QueueTabState extends ConsumerState<QueueTab> {
       settingsProvider.select((s) => s.historyFilterMode),
     );
     final colorScheme = Theme.of(context).colorScheme;
+    final updateState = ref.watch(updateProvider);
+    final isDownloadingUpdate =
+        updateState.isDownloading && updateState.updateInfo != null;
     final topPadding = normalizedHeaderTopPadding(context);
+    final headerTopMargin = isDownloadingUpdate
+        ? 0.0
+        : MediaQuery.paddingOf(context).top + topPadding + 64.0;
 
     final historyStats =
         _historyStatsCache ??
@@ -2817,207 +2824,201 @@ class _QueueTabState extends ConsumerState<QueueTab> {
       },
       child: Stack(
         children: [
-          // ScrollConfiguration disables stretch overscroll to fix _StretchController exception
-          // This is a known Flutter issue with NestedScrollView + Material 3 stretch indicator
-          ScrollConfiguration(
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(overscroll: false),
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  expandedHeight: 120 + topPadding,
-                  collapsedHeight: kToolbarHeight,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: colorScheme.surface,
-                  surfaceTintColor: Colors.transparent,
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final maxHeight = 120 + topPadding;
-                      final minHeight = kToolbarHeight + topPadding;
-                      final expandRatio =
-                          ((constraints.maxHeight - minHeight) /
-                                  (maxHeight - minHeight))
-                              .clamp(0.0, 1.0);
-
-                      return FlexibleSpaceBar(
-                        expandedTitleScale: 1.0,
-                        titlePadding: const EdgeInsets.only(
-                          left: 24,
-                          bottom: 16,
-                        ),
-                        title: Text(
-                          context.l10n.navLibrary,
-                          style: TextStyle(
-                            fontSize: 20 + (14 * expandRatio),
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  actions: [],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                color: colorScheme.surface,
+                width: double.infinity,
+                padding: EdgeInsets.only(
+                  top: headerTopMargin,
+                  bottom: 8,
+                  left: 24,
+                  right: 24,
                 ),
-
-                // Search bar - always at top
-                if (allHistoryItems.isNotEmpty ||
-                    hasQueueItems ||
-                    localLibraryItems.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: GestureDetector(
-                        onTap: () {},
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          autofocus: false,
-                          canRequestFocus: true,
-                          decoration: InputDecoration(
-                            hintText: context.l10n.historySearchHint,
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _clearSearch();
-                                      FocusScope.of(context).unfocus();
-                                    },
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: BorderSide(
-                                color: colorScheme.outlineVariant,
-                                width: 1,
+                child: Text(
+                  context.l10n.navLibrary,
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(overscroll: false),
+                  child: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                      // Search bar - always at top
+                      if (allHistoryItems.isNotEmpty ||
+                          hasQueueItems ||
+                          localLibraryItems.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                            child: GestureDetector(
+                              onTap: () {},
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                autofocus: false,
+                                canRequestFocus: true,
+                                decoration: InputDecoration(
+                                  hintText: context.l10n.historySearchHint,
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            _clearSearch();
+                                            FocusScope.of(context).unfocus();
+                                          },
+                                        )
+                                      : null,
+                                  filled: true,
+                                  fillColor:
+                                      colorScheme.surfaceContainerHighest,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outlineVariant,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outlineVariant,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary,
+                                      width: 2.5,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onChanged: _onSearchChanged,
+                                onTapOutside: (_) {
+                                  FocusScope.of(context).unfocus();
+                                },
                               ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: BorderSide(
-                                color: colorScheme.outlineVariant,
-                                width: 1.5,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 2.5,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
                             ),
                           ),
-                          onChanged: _onSearchChanged,
-                          onTapOutside: (_) {
-                            FocusScope.of(context).unfocus();
-                          },
                         ),
-                      ),
-                    ),
-                  ),
 
-                if (hasQueueItems)
-                  _buildQueueHeaderSliver(context, colorScheme),
+                      if (hasQueueItems)
+                        _buildQueueHeaderSliver(context, colorScheme),
 
-                if (hasQueueItems) _buildQueueItemsSliver(context, colorScheme),
+                      if (hasQueueItems)
+                        _buildQueueItemsSliver(context, colorScheme),
 
-                if (allHistoryItems.isNotEmpty || localLibraryItems.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: Builder(
-                        builder: (context) {
-                          // Compute filtered counts for tab chips
-                          int filteredAllCount;
-                          int filteredAlbumCount;
+                      if (allHistoryItems.isNotEmpty ||
+                          localLibraryItems.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Builder(
+                              builder: (context) {
+                                // Compute filtered counts for tab chips
+                                int filteredAllCount;
+                                int filteredAlbumCount;
 
-                          if (_activeFilterCount == 0 && _searchQuery.isEmpty) {
-                            filteredAllCount =
-                                allHistoryItems.length +
-                                localLibraryItems.length;
-                            filteredAlbumCount = albumCount;
-                          } else {
-                            final allData = getFilterData('all');
-                            final albumsData = getFilterData('albums');
-                            filteredAllCount = allData.totalTrackCount;
-                            filteredAlbumCount = albumsData.totalAlbumCount;
-                          }
+                                if (_activeFilterCount == 0 &&
+                                    _searchQuery.isEmpty) {
+                                  filteredAllCount =
+                                      allHistoryItems.length +
+                                      localLibraryItems.length;
+                                  filteredAlbumCount = albumCount;
+                                } else {
+                                  final allData = getFilterData('all');
+                                  final albumsData = getFilterData('albums');
+                                  filteredAllCount = allData.totalTrackCount;
+                                  filteredAlbumCount =
+                                      albumsData.totalAlbumCount;
+                                }
 
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _FilterChip(
-                                  label: context.l10n.historyFilterAll,
-                                  count: filteredAllCount,
-                                  isSelected: historyFilterMode == 'all',
-                                  onTap: () {
-                                    _animateToFilterPage(0);
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                _FilterChip(
-                                  label: context.l10n.historyFilterAlbums,
-                                  count: filteredAlbumCount,
-                                  isSelected: historyFilterMode == 'albums',
-                                  onTap: () {
-                                    _animateToFilterPage(1);
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                _FilterChip(
-                                  label: context.l10n.historyFilterFolders,
-                                  count: getFilterData(
-                                    'folders',
-                                  ).filteredRootFolderEntries.length,
-                                  isSelected: historyFilterMode == 'folders',
-                                  onTap: () {
-                                    _animateToFilterPage(2);
-                                  },
-                                ),
-                              ],
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _FilterChip(
+                                        label: context.l10n.historyFilterAll,
+                                        count: filteredAllCount,
+                                        isSelected: historyFilterMode == 'all',
+                                        onTap: () {
+                                          _animateToFilterPage(0);
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label: context.l10n.historyFilterAlbums,
+                                        count: filteredAlbumCount,
+                                        isSelected:
+                                            historyFilterMode == 'albums',
+                                        onTap: () {
+                                          _animateToFilterPage(1);
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label:
+                                            context.l10n.historyFilterFolders,
+                                        count: getFilterData(
+                                          'folders',
+                                        ).filteredRootFolderEntries.length,
+                                        isSelected:
+                                            historyFilterMode == 'folders',
+                                        onTap: () {
+                                          _animateToFilterPage(2);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                    ],
+                    body: PageView.builder(
+                      controller: _filterPageController!,
+                      physics: const ClampingScrollPhysics(),
+                      onPageChanged: _onFilterPageChanged,
+                      itemCount: _filterModes.length,
+                      itemBuilder: (context, index) {
+                        final filterMode = _filterModes[index];
+                        final filterData = getFilterData(filterMode);
+                        return _buildFilterContent(
+                          context: context,
+                          colorScheme: colorScheme,
+                          filterMode: filterMode,
+                          historyViewMode: historyViewMode,
+                          hasQueueItems: hasQueueItems,
+                          filterData: filterData,
+                          localLibraryItems: localLibraryItems,
+                          collectionState: collectionState,
+                        );
+                      },
                     ),
                   ),
-              ],
-              body: PageView.builder(
-                controller: _filterPageController!,
-                physics: const ClampingScrollPhysics(),
-                onPageChanged: _onFilterPageChanged,
-                itemCount: _filterModes.length,
-                itemBuilder: (context, index) {
-                  final filterMode = _filterModes[index];
-                  final filterData = getFilterData(filterMode);
-                  return _buildFilterContent(
-                    context: context,
-                    colorScheme: colorScheme,
-                    filterMode: filterMode,
-                    historyViewMode: historyViewMode,
-                    hasQueueItems: hasQueueItems,
-                    filterData: filterData,
-                    localLibraryItems: localLibraryItems,
-                    collectionState: collectionState,
-                  );
-                },
-              ),
-            ),
-          ), // ScrollConfiguration
-        ],
-      ),
-    );
+                ), // ScrollConfiguration
+              ), // Expanded
+            ], // Column's children
+          ), // Column
+        ], // Stack's children
+      ), // Stack
+    ); // PopScope
   }
 
   List<UnifiedLibraryItem> _getUnifiedItems({

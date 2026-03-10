@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hires_streamer/constants/app_info.dart';
 import 'package:hires_streamer/services/update_checker.dart';
-import 'package:hires_streamer/services/apk_downloader.dart';
-import 'package:hires_streamer/services/notification_service.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 import 'package:hires_streamer/l10n/l10n.dart';
 
-class UpdateDialog extends StatefulWidget {
+class UpdateDialog extends ConsumerStatefulWidget {
   final UpdateInfo updateInfo;
   final VoidCallback onDismiss;
   final VoidCallback onDisableUpdates;
@@ -19,13 +19,10 @@ class UpdateDialog extends StatefulWidget {
   });
 
   @override
-  State<UpdateDialog> createState() => _UpdateDialogState();
+  ConsumerState<UpdateDialog> createState() => _UpdateDialogState();
 }
 
-class _UpdateDialogState extends State<UpdateDialog> {
-  bool _isDownloading = false;
-  double _progress = 0;
-  String _statusText = '';
+class _UpdateDialogState extends ConsumerState<UpdateDialog> {
   static final RegExp _whatsNewPattern = RegExp(
     r"###?\s*What'?s\s*New\s*\n",
     caseSensitive: false,
@@ -40,74 +37,24 @@ class _UpdateDialogState extends State<UpdateDialog> {
   static final RegExp _boldPattern = RegExp(r'\*\*([^*]+)\*\*');
   static final RegExp _codePattern = RegExp(r'`([^`]+)`');
 
-  Future<void> _downloadAndInstall() async {
+  void _downloadAndInstall() {
     final apkUrl = widget.updateInfo.apkDownloadUrl;
 
     if (apkUrl == null) {
       final uri = Uri.parse(widget.updateInfo.downloadUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-      if (mounted) Navigator.pop(context);
+      canLaunchUrl(uri).then((can) {
+        if (can) launchUrl(uri, mode: LaunchMode.externalApplication);
+      });
+      Navigator.pop(context);
       return;
     }
 
-    setState(() {
-      _isDownloading = true;
-      _progress = 0;
-      _statusText = context.l10n.updateStartingDownload;
-    });
-
-    final notificationService = NotificationService();
-
-    final filePath = await ApkDownloader.downloadApk(
-      url: apkUrl,
-      version: widget.updateInfo.version,
-      onProgress: (received, total) {
-        if (mounted) {
-          setState(() {
-            _progress = total > 0 ? received / total : 0;
-            final receivedMB = (received / 1024 / 1024).toStringAsFixed(1);
-            final totalMB = (total / 1024 / 1024).toStringAsFixed(1);
-            _statusText = '$receivedMB / $totalMB MB';
-          });
-        }
-        notificationService.showUpdateDownloadProgress(
-          version: widget.updateInfo.version,
-          received: received,
-          total: total,
+    ref
+        .read(updateProvider.notifier)
+        .downloadAndInstall(
+          widget.updateInfo,
+          context.l10n.updateStartingDownload,
         );
-      },
-    );
-
-    if (filePath != null) {
-      await notificationService.cancelUpdateNotification();
-
-      await notificationService.showUpdateDownloadComplete(
-        version: widget.updateInfo.version,
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
-
-      await ApkDownloader.installApk(filePath);
-    } else {
-      await notificationService.cancelUpdateNotification();
-
-      await notificationService.showUpdateDownloadFailed();
-
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _statusText = context.l10n.updateDownloadFailed;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.updateFailedMessage)),
-        );
-      }
-    }
   }
 
   @override
@@ -115,274 +62,292 @@ class _UpdateDialogState extends State<UpdateDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Dialog(
-      backgroundColor: colorScheme.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
+    final updateState = ref.watch(updateProvider);
+    final isDownloading = updateState.isDownloading;
+    final progress = updateState.progress;
+    final statusText = updateState.statusText;
+
+    return PopScope(
+      canPop: isDownloading,
+      child: Dialog(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.system_update_rounded,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 28,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.system_update_rounded,
-                    color: colorScheme.onPrimaryContainer,
-                    size: 28,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.updateAvailable,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          context.l10n.updateNewVersionReady,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Color.alphaBlend(
+                          Colors.white.withValues(alpha: 0.08),
+                          colorScheme.surface,
+                        )
+                      : Color.alphaBlend(
+                          Colors.black.withValues(alpha: 0.04),
+                          colorScheme.surface,
+                        ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _VersionChip(
+                      version: AppInfo.version,
+                      label: context.l10n.updateCurrent,
+                      colorScheme: colorScheme,
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    _VersionChip(
+                      version: widget.updateInfo.version,
+                      label: context.l10n.updateNew,
+                      colorScheme: colorScheme,
+                      isNew: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              if (isDownloading) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Color.alphaBlend(
+                            Colors.white.withValues(alpha: 0.05),
+                            colorScheme.surface,
+                          )
+                        : Color.alphaBlend(
+                            Colors.black.withValues(alpha: 0.03),
+                            colorScheme.surface,
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        context.l10n.updateAvailable,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            context.l10n.updateDownloading,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        context.l10n.updateNewVersionReady,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            statusText,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                          Text(
+                            '${(progress * 100).toInt()}%',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+              ] else ...[
+                Text(
+                  context.l10n.updateWhatsNew,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Color.alphaBlend(
+                            Colors.white.withValues(alpha: 0.05),
+                            colorScheme.surface,
+                          )
+                        : Color.alphaBlend(
+                            Colors.black.withValues(alpha: 0.03),
+                            colorScheme.surface,
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _formatChangelog(widget.updateInfo.changelog),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(height: 1.5),
+                    ),
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Color.alphaBlend(
-                        Colors.white.withValues(alpha: 0.08),
-                        colorScheme.surface,
-                      )
-                    : Color.alphaBlend(
-                        Colors.black.withValues(alpha: 0.04),
-                        colorScheme.surface,
-                      ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _VersionChip(
-                    version: AppInfo.version,
-                    label: context.l10n.updateCurrent,
-                    colorScheme: colorScheme,
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  _VersionChip(
-                    version: widget.updateInfo.version,
-                    label: context.l10n.updateNew,
-                    colorScheme: colorScheme,
-                    isNew: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            if (_isDownloading) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Color.alphaBlend(
-                          Colors.white.withValues(alpha: 0.05),
-                          colorScheme.surface,
-                        )
-                      : Color.alphaBlend(
-                          Colors.black.withValues(alpha: 0.03),
-                          colorScheme.surface,
+              if (isDownloading)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ref.read(updateProvider.notifier).cancelDownload();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Update download cancelled'),
+                          behavior: SnackBarBehavior.floating,
                         ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                      Navigator.pop(context);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(context.l10n.dialogCancel),
+                  ),
+                )
+              else
+                Column(
                   children: [
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _downloadAndInstall,
+                        icon: const Icon(Icons.download_rounded, size: 20),
+                        label: Text(context.l10n.updateDownloadInstall),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          context.l10n.updateDownloading,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: _progress,
-                        minHeight: 6,
-                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _statusText,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                        Text(
-                          '${(_progress * 100).toInt()}%',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              widget.onDisableUpdates();
+                              Navigator.pop(context);
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                            ),
+                            child: Text(
+                              context.l10n.updateDontRemind,
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              widget.onDismiss();
+                              Navigator.pop(context);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(context.l10n.updateLater),
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
-            ] else ...[
-              Text(
-                context.l10n.updateWhatsNew,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 180),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Color.alphaBlend(
-                          Colors.white.withValues(alpha: 0.05),
-                          colorScheme.surface,
-                        )
-                      : Color.alphaBlend(
-                          Colors.black.withValues(alpha: 0.03),
-                          colorScheme.surface,
-                        ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _formatChangelog(widget.updateInfo.changelog),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(height: 1.5),
-                  ),
-                ),
-              ),
             ],
-            const SizedBox(height: 24),
-
-            if (_isDownloading)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(context.l10n.dialogCancel),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _downloadAndInstall,
-                      icon: const Icon(Icons.download_rounded, size: 20),
-                      label: Text(context.l10n.updateDownloadInstall),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {
-                            widget.onDisableUpdates();
-                            Navigator.pop(context);
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            context.l10n.updateDontRemind,
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            widget.onDismiss();
-                            Navigator.pop(context);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(context.l10n.updateLater),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -509,6 +474,7 @@ Future<void> showUpdateDialog(
 }) async {
   return showDialog(
     context: context,
+    barrierDismissible: true,
     builder: (context) => UpdateDialog(
       updateInfo: updateInfo,
       onDismiss: () {},
