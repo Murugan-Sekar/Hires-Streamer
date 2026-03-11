@@ -340,6 +340,10 @@ func NewQobuzDownloader() *QobuzDownloader {
 	return globalQobuzDownloader
 }
 
+func getQobuzDebugKey() string {
+	return "798273057"
+}
+
 func (q *QobuzDownloader) GetTrackByID(trackID int64) (*QobuzTrack, error) {
 	trackURL := fmt.Sprintf("%s%d&app_id=%s", qobuzTrackGetBaseURL, trackID, q.appID)
 

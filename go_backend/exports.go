@@ -235,6 +235,8 @@ type DownloadResponse struct {
 	SkipMetadataEnrichment bool   `json:"skip_metadata_enrichment,omitempty"`
 	LyricsLRC              string `json:"lyrics_lrc,omitempty"`
 	DecryptionKey          string `json:"decryption_key,omitempty"`
+	MaxBitDepth            int    `json:"max_bit_depth,omitempty"`
+	MaxSampleRate          float64 `json:"max_sample_rate,omitempty"`
 }
 
 type DownloadResult struct {
