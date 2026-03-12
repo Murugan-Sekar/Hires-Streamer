@@ -1038,7 +1038,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get snackbarFileNotFound => 'File not found';
 
   @override
-  String get snackbarSelectExtFile => 'Please select a .HiResStreamer-ext file';
+  String get snackbarSelectExtFile =>
+      'Please select a .HiResStreamer-ext or .spotiflac-ext file';
 
   @override
   String get snackbarProviderPrioritySaved => 'Provider priority saved';
@@ -1862,7 +1863,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionsNoExtensionsSubtitle =>
-      'Install .HiResStreamer-ext files to add new providers';
+      'Install .HiResStreamer-ext or .spotiflac-ext files to add new providers';
 
   @override
   String get extensionsInstallButton => 'Install Extension';
@@ -2673,7 +2674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageModeInfo => 'Your files are stored in multiple locations';
 
   @override
-  String get tutorialWelcomeTitle => 'Welcome to HiRes Streamer!';
+  String get tutorialWelcomeTitle => 'Welcome to Hi-Res Streamer!';
 
   @override
   String get tutorialWelcomeDesc =>

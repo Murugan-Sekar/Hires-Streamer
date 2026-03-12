@@ -129,7 +129,8 @@ var (
 )
 
 const (
-	defaultRegistryURL = "https://raw.githubusercontent.com/zarzet/HiResStreamer-Extension/main/registry.json"
+	// defaultRegistryURL = "https://raw.githubusercontent.com/zarzet/spotiflac-extension/main/registry.json"
+	defaultRegistryURL = "https://raw.githubusercontent.com/zarzet/SpotiFLAC-Extension/main/registry.json"
 	cacheTTL           = 30 * time.Minute
 	cacheFileName      = "store_cache.json"
 )
@@ -292,9 +293,16 @@ func (s *ExtensionStore) DownloadExtension(extensionID string, destPath string) 
 	}
 
 	var ext *StoreExtension
-	for _, e := range registry.Extensions {
-		if e.ID == extensionID {
-			ext = &e
+	// for _, e := range registry.Extensions {
+	// 	if e.ID == extensionID {
+	// 		ext = &e
+	// 		break
+	// 	}
+	// }
+
+	for i := range registry.Extensions {
+		if registry.Extensions[i].ID == extensionID {
+			ext = &registry.Extensions[i]
 			break
 		}
 	}

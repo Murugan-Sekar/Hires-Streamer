@@ -22,16 +22,16 @@ The application can stream playlists, albums, tracks, and radio using Spotify UR
 ## Installation
 
 1. Clone the repository
-git clone https://github.com/Murugan-Sekar/Hires-Streamer.git
+   git clone https://github.com/Murugan-Sekar/Hires-Streamer.git
 
 2. Install dependencies
-flutter pub get
+   flutter pub get
 
-3. Build backend
-gomobile bind -target=android -androidapi 21
+3. Build Go backend
+   gomobile bind -target=android -androidapi 21 -o gobackend.aar
 
 4. Run the app
-flutter run
+   flutter run
 
 ## Author
 

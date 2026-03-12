@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:hires_streamer/constants/app_info.dart';
 import 'package:hires_streamer/utils/app_bar_layout.dart';
-import 'package:hires_streamer/widgets/donate_icons.dart';
 
 class DonatePage extends StatelessWidget {
   const DonatePage({super.key});
@@ -305,74 +302,6 @@ class _DonateLinksCard extends StatelessWidget {
   }
 }
 
-class _DonateCardItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Widget customIcon;
-  final Color color;
-  final String url;
-  final ColorScheme colorScheme;
-
-  const _DonateCardItem({
-    required this.title,
-    required this.subtitle,
-    required this.customIcon,
-    required this.color,
-    required this.url,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () =>
-          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(child: customIcon),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.open_in_new,
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _CryptoWalletItem extends StatelessWidget {
   final String title;

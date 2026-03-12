@@ -10,7 +10,6 @@ import 'package:hires_streamer/screens/settings/library_settings_page.dart';
 import 'package:hires_streamer/screens/settings/options_settings_page.dart';
 import 'package:hires_streamer/screens/settings/about_page.dart';
 import 'package:hires_streamer/screens/settings/cache_management_page.dart';
-import 'package:hires_streamer/screens/settings/donate_page.dart';
 import 'package:hires_streamer/screens/settings/log_screen.dart';
 import 'package:hires_streamer/utils/app_bar_layout.dart';
 import 'package:hires_streamer/widgets/settings_group.dart';

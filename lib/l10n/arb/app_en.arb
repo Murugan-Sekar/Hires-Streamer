@@ -1324,7 +1324,7 @@
   "@snackbarFileNotFound": {
     "description": "Snackbar - file doesn't exist"
   },
-  "snackbarSelectExtFile": "Please select a .HiResStreamer-ext file",
+  "snackbarSelectExtFile": "Please select a .HiResStreamer-ext or .spotiflac-ext file",
   "@snackbarSelectExtFile": {
     "description": "Snackbar - wrong file type selected"
   },
@@ -2431,7 +2431,7 @@
   "@extensionsNoExtensions": {
     "description": "Empty state - no extensions"
   },
-  "extensionsNoExtensionsSubtitle": "Install .HiResStreamer-ext files to add new providers",
+  "extensionsNoExtensionsSubtitle": "Install .HiResStreamer-ext or .spotiflac-ext files to add new providers",
   "@extensionsNoExtensionsSubtitle": {
     "description": "Empty state subtitle"
   },
@@ -3537,7 +3537,7 @@
   "@storageModeInfo": {
     "description": "Info when user has files in both storage modes"
   },
-  "tutorialWelcomeTitle": "Welcome to HiRes Streamer!",
+  "tutorialWelcomeTitle": "Welcome to Hi-Res Streamer!",
   "@tutorialWelcomeTitle": {
     "description": "Tutorial welcome page title"
   },

@@ -285,7 +285,9 @@ class _ExtensionsPageState extends ConsumerState<ExtensionsPage> {
     if (result != null && result.files.isNotEmpty) {
       final file = result.files.first;
       if (file.path != null) {
-        if (!file.path!.endsWith('.HiResStreamer-ext')) {
+        final pathLower = file.path!.toLowerCase();
+        if (!pathLower.endsWith('.hiresstreamer-ext') &&
+            !pathLower.endsWith('.spotiflac-ext')) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(context.l10n.snackbarSelectExtFile)),

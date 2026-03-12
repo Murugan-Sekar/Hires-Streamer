@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -122,11 +123,7 @@ class MiniPlayerBar extends ConsumerWidget {
                   if (stateSnapshot.isBuffering || stateSnapshot.isLoading)
                     const Padding(
                       padding: EdgeInsets.only(right: 8),
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                      child: _BufferingIndicator(size: 20, strokeWidth: 2),
                     ),
                   // Play / Pause
                   IconButton(
@@ -828,11 +825,7 @@ class _LyricsPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const _BufferingIndicator(size: 32, strokeWidth: 3),
             const SizedBox(height: 12),
             Text(
               'Loading lyrics...',
@@ -1298,12 +1291,7 @@ class _AudioQualityFooter extends ConsumerWidget {
     required this.onQueuePressed,
   });
 
-  String _currentQualityTier(PlaybackItem displayItem) {
-    if (displayItem.bitDepth >= 24 && displayItem.sampleRate > 96000)
-      return 'HI_RES_LOSSLESS';
-    if (displayItem.bitDepth > 16) return 'HI_RES';
-    return 'LOSSLESS';
-  }
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1313,7 +1301,8 @@ class _AudioQualityFooter extends ConsumerWidget {
     final showMetadata =
         displayItem.format.isNotEmpty ||
         displayItem.bitrate > 0 ||
-        displayItem.sampleRate > 0;
+        displayItem.sampleRate > 0 ||
+        displayItem.fileSize > 0;
 
     final format = displayItem.format.toLowerCase();
     final isLossless =
@@ -1337,24 +1326,7 @@ class _AudioQualityFooter extends ConsumerWidget {
         ? '${(displayItem.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB'
         : '';
 
-    final maxBitDepth = displayItem.maxBitDepth ?? 0;
-    final maxSampleRateKhz = displayItem.maxSampleRate ?? 0.0;
-    final service = displayItem.service.toLowerCase();
 
-    // Always show all tiers for Tidal and Qobuz as they generally support them
-    final isHiResCapableService = service == 'tidal' || service == 'qobuz';
-
-    final hasHiRes = maxBitDepth > 16 || isHiResCapableService;
-    final hasHiResLossless =
-        (maxBitDepth >= 24 && maxSampleRateKhz > 96) || isHiResCapableService;
-    final currentTier =
-        playbackState.requestedQuality ?? _currentQualityTier(displayItem);
-
-    final tiers = <Map<String, String>>[
-      {'key': 'LOSSLESS', 'label': '16-bit'},
-      if (hasHiRes) {'key': 'HI_RES', 'label': '24-bit 96k'},
-      if (hasHiResLossless) {'key': 'HI_RES_LOSSLESS', 'label': '24-bit 192k'},
-    ];
 
     return SizedBox(
       width: double.infinity,
@@ -1428,60 +1400,6 @@ class _AudioQualityFooter extends ConsumerWidget {
             ),
           ),
 
-          if (!item.isLocal && (isHiResCapableService || tiers.length > 1)) ...[
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: tiers.map((tier) {
-                  final isActive = tier['key'] == currentTier;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: InkWell(
-                      onTap: isActive
-                          ? null
-                          : () => ref
-                                .read(playbackProvider.notifier)
-                                .switchQuality(tier['key']!),
-                      borderRadius: BorderRadius.circular(20),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? colorScheme.primary.withValues(alpha: 0.15)
-                              : colorScheme.onSurface.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isActive
-                                ? colorScheme.primary
-                                : Colors.transparent,
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          tier['label']!,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: isActive
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant,
-                                fontWeight: isActive
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
 
           const SizedBox(height: 16),
           Padding(
@@ -1661,13 +1579,10 @@ class _PlaybackControls extends ConsumerWidget {
             iconSize: mainIconSize,
             onPressed: notifier.togglePlayPause,
             icon: state.isBuffering || state.isLoading
-                ? SizedBox(
-                    width: loadingSize,
-                    height: loadingSize,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: colorScheme.onPrimary,
-                    ),
+                ? _BufferingIndicator(
+                    size: loadingSize,
+                    strokeWidth: 2.5,
+                    color: colorScheme.onPrimary,
                   )
                 : Icon(
                     state.isPlaying
@@ -2160,5 +2075,132 @@ class _QueueBottomSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+// ─── Custom Buffering Animation ──────────────────────────────────────────────
+class _BufferingIndicator extends StatefulWidget {
+  final double size;
+  final double strokeWidth;
+  final Color? color;
+
+  const _BufferingIndicator({
+    required this.size,
+    this.strokeWidth = 3.0,
+    this.color,
+  });
+
+  @override
+  State<_BufferingIndicator> createState() => _BufferingIndicatorState();
+}
+
+class _BufferingIndicatorState extends State<_BufferingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color ?? Theme.of(context).colorScheme.primary;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Rotating arc
+              Transform.rotate(
+                angle: _controller.value * 2 * math.pi,
+                child: CustomPaint(
+                  size: Size(widget.size, widget.size),
+                  painter: _BufferingPainter(
+                    color: color,
+                    strokeWidth: widget.strokeWidth,
+                    progress: _controller.value,
+                  ),
+                ),
+              ),
+              // Optional: Inner pulsing dot for more life
+              Container(
+                width: widget.size * 0.2,
+                height: widget.size * 0.2,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BufferingPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double progress;
+
+  _BufferingPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // Draw two arcs that expand and contract or just rotate
+    // Here we'll draw a main arc that changes length based on sine wave
+    final startAngle = 0.0;
+    final sweepAngle = 1.5 * math.pi * (0.5 + 0.3 * (1 + math.sin(progress * 2 * math.pi)) / 2);
+    
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      paint,
+    );
+    
+    // Dim background ring
+    final bgPaint = Paint()
+      ..color = color.withValues(alpha: 0.1)
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    
+    canvas.drawCircle(center, radius, bgPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BufferingPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

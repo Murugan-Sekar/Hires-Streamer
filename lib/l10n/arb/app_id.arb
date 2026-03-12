@@ -3525,7 +3525,7 @@
   "@storageModeInfo": {
     "description": "Info when user has files in both storage modes"
   },
-  "tutorialWelcomeTitle": "Welcome to HiRes Streamer!",
+  "tutorialWelcomeTitle": "Welcome to Hi-Res Streamer!",
   "@tutorialWelcomeTitle": {
     "description": "Tutorial welcome page title"
   },

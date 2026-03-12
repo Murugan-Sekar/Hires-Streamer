@@ -674,63 +674,83 @@ class ExtensionNotifier extends Notifier<ExtensionState> {
   Future<bool> ensureSpotifyWebExtensionReady({
     bool setAsSearchProvider = true,
   }) async {
-    try {
-      await refreshExtensions();
+    _log.d('ensureSpotifyWebExtensionReady (setAsSearchProvider: $setAsSearchProvider)');
+    
+    int retryCount = 0;
+    const maxRetries = 3;
 
-      var ext = state.extensions
-          .where((e) => e.id == _spotifyWebExtensionId)
-          .firstOrNull;
-
-      if (ext == null) {
-        final cacheDir = await getTemporaryDirectory();
-        await PlatformBridge.initExtensionStore(cacheDir.path);
-
-        final tempRoot = await getTemporaryDirectory();
-        final installDir = await Directory(
-          '${tempRoot.path}/HiResStreamer_bootstrap_spotify_web',
-        ).create(recursive: true);
-
-        final downloadPath = await PlatformBridge.downloadStoreExtension(
-          _spotifyWebExtensionId,
-          installDir.path,
-        );
-
-        final installed = await installExtension(downloadPath);
-        if (!installed) {
-          _log.w('Failed to install spotify-web extension from store');
-          return false;
-        }
-
+    while (retryCount < maxRetries) {
+      try {
         await refreshExtensions();
-        ext = state.extensions
+
+        var ext = state.extensions
             .where((e) => e.id == _spotifyWebExtensionId)
             .firstOrNull;
-      }
 
-      if (ext == null) {
-        _log.w('spotify-web extension is still not available after install');
-        return false;
-      }
+        if (ext == null) {
+          _log.i('spotify-web extension not found, attempting to install (attempt ${retryCount + 1}/$maxRetries)...');
+          
+          final cacheDir = await getTemporaryDirectory();
+          await PlatformBridge.initExtensionStore(cacheDir.path);
 
-      if (!ext.enabled) {
-        await setExtensionEnabled(_spotifyWebExtensionId, true);
-      }
+          final tempRoot = await getTemporaryDirectory();
+          final installDir = await Directory(
+            '${tempRoot.path}/HiResStreamer_bootstrap_spotify_web_${DateTime.now().millisecondsSinceEpoch}',
+          ).create(recursive: true);
 
-      if (setAsSearchProvider) {
-        final settings = ref.read(settingsProvider);
-        if (settings.searchProvider != _spotifyWebExtensionId) {
-          ref
-              .read(settingsProvider.notifier)
-              .setSearchProvider(_spotifyWebExtensionId);
+          final downloadPath = await PlatformBridge.downloadStoreExtension(
+            _spotifyWebExtensionId,
+            installDir.path,
+          );
+
+          final installed = await installExtension(downloadPath);
+          if (!installed) {
+            _log.w('Failed to install spotify-web extension from store (attempt ${retryCount + 1})');
+            retryCount++;
+            await Future.delayed(Duration(seconds: 1 * retryCount));
+            continue;
+          }
+
+          await refreshExtensions();
+          ext = state.extensions
+              .where((e) => e.id == _spotifyWebExtensionId)
+              .firstOrNull;
         }
-      }
 
-      _log.i('spotify-web extension is ready');
-      return true;
-    } catch (e) {
-      _log.w('Failed to ensure spotify-web extension is ready: $e');
-      return false;
+        if (ext == null) {
+          _log.w('spotify-web extension is still not available after install (attempt ${retryCount + 1})');
+          retryCount++;
+          await Future.delayed(Duration(seconds: 1 * retryCount));
+          continue;
+        }
+
+        if (!ext.enabled) {
+          _log.i('Enabling spotify-web extension...');
+          await setExtensionEnabled(_spotifyWebExtensionId, true);
+        }
+
+        if (setAsSearchProvider) {
+          final settings = ref.read(settingsProvider);
+          if (settings.searchProvider != _spotifyWebExtensionId) {
+            _log.i('Setting spotify-web as primary search provider...');
+            ref
+                .read(settingsProvider.notifier)
+                .setSearchProvider(_spotifyWebExtensionId);
+          }
+        }
+
+        _log.i('spotify-web extension is ready');
+        return true;
+      } catch (e) {
+        _log.w('Error in ensureSpotifyWebExtensionReady (attempt ${retryCount + 1}): $e');
+        retryCount++;
+        if (retryCount >= maxRetries) break;
+        await Future.delayed(Duration(seconds: 1 * retryCount));
+      }
     }
+
+    _log.e('Failed to ensure spotify-web extension is ready after $maxRetries attempts');
+    return false;
   }
 
   Future<Map<String, dynamic>> getExtensionSettings(String extensionId) async {

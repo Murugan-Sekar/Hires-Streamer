@@ -277,9 +277,9 @@ class PlaybackController extends Notifier<PlaybackState> {
   Timer? _smartQueueModelSaveTimer;
   _HiResStreamerAudioHandler? _audioHandler;
   var _initialized = false;
-  static const Duration _prefetchThresholdFloor = Duration(seconds: 12);
+  static const Duration _prefetchThresholdFloor = Duration(seconds: 15);
   static const Duration _prefetchThresholdCeiling = Duration(seconds: 40);
-  static const Duration _prefetchEarlyKickoffPosition = Duration(seconds: 6);
+  static const Duration _prefetchEarlyKickoffPosition = Duration(seconds: 5);
   static const Duration _prefetchRetryCooldown = Duration(seconds: 3);
   static const int _maxPrefetchAttemptsPerTrack = 2;
   static const int _smartQueueTriggerRemainingTracks = 2;
@@ -1653,7 +1653,7 @@ class PlaybackController extends Notifier<PlaybackState> {
     _clearLyricsForTrackChange(upcomingItem: item);
 
     // Fetch missing file size natively before starting playback
-    if (item.isLocal && item.fileSize <= 0 && item.sourceUri.isNotEmpty) {
+    if (item.fileSize <= 0 && item.sourceUri.isNotEmpty) {
       String localPath = item.sourceUri;
       if (localPath.startsWith('file://')) {
         try {
@@ -1669,7 +1669,7 @@ class PlaybackController extends Notifier<PlaybackState> {
           state = state.copyWith(queue: updatedQueue);
         }
       } catch (e) {
-        _log.w('Failed to fetch fileStat for local track: $e');
+        _log.w('Failed to fetch fileStat for track: $e');
       }
     }
     state = state.copyWith(
@@ -3915,19 +3915,20 @@ class PlaybackController extends Notifier<PlaybackState> {
   Future<void> _prefetchQueueIndex(int index) async {
     if (index < 0 || index >= state.queue.length) return;
 
-    final item = state.queue[index];
-    if (item.track == null || item.isLocal) return;
+    var item = state.queue[index];
+    if (item.track == null || item.isLocal || item.sourceUri.isNotEmpty) return;
 
     final track = item.track!;
     final settings = ref.read(settingsProvider);
     final service = _resolveService(settings.defaultService);
 
     _log.i(
-      'Prefetching track at index $index: ${track.name} (service: $service)',
+      'Prefetching and resolving track at index $index: ${track.name} (service: $service)',
     );
 
     try {
-      await PlatformBridge.preWarmTrackCache([
+      // Step 1: Pre-warm backend cache
+      unawaited(PlatformBridge.preWarmTrackCache([
         {
           'isrc': track.isrc ?? '',
           'track_name': track.name,
@@ -3937,9 +3938,79 @@ class PlaybackController extends Notifier<PlaybackState> {
               : '',
           'service': service,
         },
-      ]);
+      ]));
+
+      // Step 2: Resolve stream URI ahead of time
+      final tempDir = await getTemporaryDirectory();
+      final streamCacheDir = Directory(p.join(tempDir.path, 'stream_cache'));
+      if (!await streamCacheDir.exists()) {
+        await streamCacheDir.create(recursive: true);
+      }
+      final tempId = 'prefetch_${DateTime.now().millisecondsSinceEpoch}_$index';
+
+      final payload = DownloadRequestPayload(
+        trackName: track.name,
+        artistName: track.artistName,
+        albumName: track.albumName,
+        spotifyId: track.source == 'spotify-web' || track.id.length == 22 ? track.id : '',
+        deezerId: track.deezerId ?? '',
+        isrc: track.isrc ?? '',
+        service: service,
+        quality: 'LOSSLESS',
+        outputDir: streamCacheDir.path,
+        filenameFormat: 'stream_$tempId.flac',
+        itemId: tempId,
+        embedMetadata: false,
+        embedLyrics: false,
+        embedMaxQualityCover: false,
+        coverUrl: track.coverUrl ?? '',
+      );
+
+      final response = await PlatformBridge.downloadByStrategy(
+        payload: payload,
+        useExtensions: true,
+        useFallback: true,
+      );
+
+      if (response['success'] == true && response['file_path'] != null) {
+        final String filePath = response['file_path'];
+        
+        int parseSafeInt(dynamic val) {
+          if (val == null) return 0;
+          if (val is int) return val;
+          if (val is String) return int.tryParse(val) ?? 0;
+          return 0;
+        }
+
+        int resolvedFileSize = parseSafeInt(response['file_size'] ?? 0);
+        if (resolvedFileSize <= 0) {
+          try {
+            final stat = await fileStat(filePath);
+            if (stat != null && stat.size != null) {
+              resolvedFileSize = stat.size!;
+            }
+          } catch (_) {}
+        }
+
+        item = item.copyWith(
+          sourceUri: filePath,
+          format: response['format'] ?? 'flac',
+          bitrate: parseSafeInt(response['bitrate'] ?? response['bit_rate'] ?? 0),
+          sampleRate: parseSafeInt(response['sample_rate'] ?? response['actual_sample_rate'] ?? 0),
+          bitDepth: parseSafeInt(response['bit_depth'] ?? response['actual_bit_depth'] ?? 0),
+          fileSize: resolvedFileSize,
+          service: service,
+        );
+
+        if (state.queue.length > index && state.queue[index].id == item.id) {
+          final updatedQueue = List<PlaybackItem>.from(state.queue);
+          updatedQueue[index] = item;
+          state = state.copyWith(queue: updatedQueue);
+          _log.d('Prefetch resolved URI for next track: $filePath');
+        }
+      }
     } catch (e) {
-      _log.w('Prefetch failed for index $index: $e');
+      _log.w('Prefetch/Resolve failed for index $index: $e');
     }
   }
 

@@ -2309,8 +2309,9 @@ class _QueueTabState extends ConsumerState<QueueTab> {
               path,
               currentRoot,
             );
-            if (relative == null || relative == '.' || relative.isEmpty)
+            if (relative == null || relative == '.' || relative.isEmpty) {
               continue;
+            }
             final parts = p.split(relative);
             if (parts.length == 1) {
               hasDirectFile = true;
@@ -2384,8 +2385,9 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             // Skip generic names that don't represent real folders
             if (folderName == 'document' ||
                 folderName == 'primary' ||
-                folderName == 'tree')
+                folderName == 'tree') {
               continue;
+            }
 
             if (rootEntriesMap.containsKey(folderPath)) {
               rootEntriesMap[folderPath]!.allDescendantTracks.add(item);

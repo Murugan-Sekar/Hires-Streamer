@@ -211,31 +211,31 @@ type DownloadRequest struct {
 }
 
 type DownloadResponse struct {
-	Success                bool   `json:"success"`
-	Message                string `json:"message"`
-	FilePath               string `json:"file_path,omitempty"`
-	Error                  string `json:"error,omitempty"`
-	ErrorType              string `json:"error_type,omitempty"`
-	AlreadyExists          bool   `json:"already_exists,omitempty"`
-	ActualBitDepth         int    `json:"actual_bit_depth,omitempty"`
-	ActualSampleRate       int    `json:"actual_sample_rate,omitempty"`
-	Service                string `json:"service,omitempty"`
-	Title                  string `json:"title,omitempty"`
-	Artist                 string `json:"artist,omitempty"`
-	Album                  string `json:"album,omitempty"`
-	AlbumArtist            string `json:"album_artist,omitempty"`
-	ReleaseDate            string `json:"release_date,omitempty"`
-	TrackNumber            int    `json:"track_number,omitempty"`
-	DiscNumber             int    `json:"disc_number,omitempty"`
-	ISRC                   string `json:"isrc,omitempty"`
-	CoverURL               string `json:"cover_url,omitempty"`
-	Genre                  string `json:"genre,omitempty"`
-	Label                  string `json:"label,omitempty"`
-	Copyright              string `json:"copyright,omitempty"`
-	SkipMetadataEnrichment bool   `json:"skip_metadata_enrichment,omitempty"`
-	LyricsLRC              string `json:"lyrics_lrc,omitempty"`
-	DecryptionKey          string `json:"decryption_key,omitempty"`
-	MaxBitDepth            int    `json:"max_bit_depth,omitempty"`
+	Success                bool    `json:"success"`
+	Message                string  `json:"message"`
+	FilePath               string  `json:"file_path,omitempty"`
+	Error                  string  `json:"error,omitempty"`
+	ErrorType              string  `json:"error_type,omitempty"`
+	AlreadyExists          bool    `json:"already_exists,omitempty"`
+	ActualBitDepth         int     `json:"actual_bit_depth,omitempty"`
+	ActualSampleRate       int     `json:"actual_sample_rate,omitempty"`
+	Service                string  `json:"service,omitempty"`
+	Title                  string  `json:"title,omitempty"`
+	Artist                 string  `json:"artist,omitempty"`
+	Album                  string  `json:"album,omitempty"`
+	AlbumArtist            string  `json:"album_artist,omitempty"`
+	ReleaseDate            string  `json:"release_date,omitempty"`
+	TrackNumber            int     `json:"track_number,omitempty"`
+	DiscNumber             int     `json:"disc_number,omitempty"`
+	ISRC                   string  `json:"isrc,omitempty"`
+	CoverURL               string  `json:"cover_url,omitempty"`
+	Genre                  string  `json:"genre,omitempty"`
+	Label                  string  `json:"label,omitempty"`
+	Copyright              string  `json:"copyright,omitempty"`
+	SkipMetadataEnrichment bool    `json:"skip_metadata_enrichment,omitempty"`
+	LyricsLRC              string  `json:"lyrics_lrc,omitempty"`
+	DecryptionKey          string  `json:"decryption_key,omitempty"`
+	MaxBitDepth            int     `json:"max_bit_depth,omitempty"`
 	MaxSampleRate          float64 `json:"max_sample_rate,omitempty"`
 }
 
@@ -3201,7 +3201,8 @@ func buildStoreExtensionDestPath(destDir, extensionID string) (string, error) {
 	}
 
 	safeExtensionID := sanitizeFilename(extensionID)
-	return filepath.Join(destDir, safeExtensionID+".HiResStreamer-ext"), nil
+	// We use lowercase here to be consistent with our case-insensitive checks in the loader
+	return filepath.Join(destDir, safeExtensionID+".hiresstreamer-ext"), nil
 }
 
 func DownloadStoreExtensionJSON(extensionID, destDir string) (string, error) {

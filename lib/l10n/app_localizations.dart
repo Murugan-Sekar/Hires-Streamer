@@ -1909,7 +1909,7 @@ abstract class AppLocalizations {
   /// Snackbar - wrong file type selected
   ///
   /// In en, this message translates to:
-  /// **'Please select a .HiResStreamer-ext file'**
+  /// **'Please select a .HiResStreamer-ext or .spotiflac-ext file'**
   String get snackbarSelectExtFile;
 
   /// Snackbar - provider order saved
@@ -3391,7 +3391,7 @@ abstract class AppLocalizations {
   /// Empty state subtitle
   ///
   /// In en, this message translates to:
-  /// **'Install .HiResStreamer-ext files to add new providers'**
+  /// **'Install .HiResStreamer-ext or .spotiflac-ext files to add new providers'**
   String get extensionsNoExtensionsSubtitle;
 
   /// Button to install extension from file
@@ -4771,7 +4771,7 @@ abstract class AppLocalizations {
   /// Tutorial welcome page title
   ///
   /// In en, this message translates to:
-  /// **'Welcome to HiRes Streamer!'**
+  /// **'Welcome to Hi-Res Streamer!'**
   String get tutorialWelcomeTitle;
 
   /// Tutorial welcome page description

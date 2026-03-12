@@ -2679,7 +2679,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get storageModeInfo => 'Your files are stored in multiple locations';
 
   @override
-  String get tutorialWelcomeTitle => 'Welcome to HiRes Streamer!';
+  String get tutorialWelcomeTitle => 'Welcome to Hi-Res Streamer!';
 
   @override
   String get tutorialWelcomeDesc =>

@@ -182,7 +182,7 @@ class OptionsSettingsPage extends ConsumerWidget {
                         .read(settingsProvider.notifier)
                         .setSmartQueueEnabled(v),
                   ),
-                  if (hasExtensions)
+                  if (hasExtensions || settings.showExtensionStore)
                     SettingsSwitchItem(
                       icon: Icons.extension,
                       title: context.l10n.optionsUseExtensionProviders,
@@ -947,7 +947,9 @@ class _MetadataSourceSelector extends ConsumerWidget {
           Text(
             hasExtensionSearch
                 ? context.l10n.optionsUsingExtension(extensionName!)
-                : context.l10n.optionsPrimaryProviderSubtitle,
+                : settings.useExtensionProviders
+                    ? 'Search for metadata and streaming using extensions' // Fallback text that matches Image 1's intent
+                    : context.l10n.optionsPrimaryProviderSubtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: hasExtensionSearch
                   ? colorScheme.primary
