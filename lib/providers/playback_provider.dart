@@ -591,13 +591,13 @@ class PlaybackController extends Notifier<PlaybackState> {
               onSeek: seek,
               onToggleLove: _handleNotificationToggleLove,
             ),
-            config: const audio_service.AudioServiceConfig(
+            config: audio_service.AudioServiceConfig(
               androidNotificationChannelId: 'com.peter.hiresstreamer.playback',
               androidNotificationChannelName: 'Music Playback',
               androidNotificationIcon: 'drawable/ic_stat_logo',
               androidNotificationOngoing: true,
               androidShowNotificationBadge: true,
-              androidStopForegroundOnPause: true,
+              androidStopForegroundOnPause: false,
             ),
           );
     } catch (e) {
@@ -1376,7 +1376,11 @@ class PlaybackController extends Notifier<PlaybackState> {
   }
 
   // ─── Public: play a list of tracks (set queue) ───────────────────────────
-  Future<void> playTrackList(List<Track> tracks, {int startIndex = 0}) async {
+  Future<void> playTrackList(
+    List<Track> tracks, {
+    int startIndex = 0,
+    bool? shuffle,
+  }) async {
     if (tracks.isEmpty) return;
     _resetPrefetchCycleState();
     _resetSmartQueueSessionState(clearRecent: true);
@@ -1388,6 +1392,7 @@ class PlaybackController extends Notifier<PlaybackState> {
     state = state.copyWith(
       queue: items,
       currentIndex: startIndex.clamp(0, items.length - 1),
+      shuffle: shuffle ?? state.shuffle,
     );
     unawaited(_savePlaybackSnapshot());
 
@@ -1401,6 +1406,9 @@ class PlaybackController extends Notifier<PlaybackState> {
         _shuffleOrder.insert(0, state.currentIndex);
       }
       _shufflePosition = 0;
+    } else {
+      _shuffleOrder = [];
+      _shufflePosition = -1;
     }
 
     await _playQueueIndex(state.currentIndex);
@@ -3928,17 +3936,19 @@ class PlaybackController extends Notifier<PlaybackState> {
 
     try {
       // Step 1: Pre-warm backend cache
-      unawaited(PlatformBridge.preWarmTrackCache([
-        {
-          'isrc': track.isrc ?? '',
-          'track_name': track.name,
-          'artist_name': track.artistName,
-          'spotify_id': track.source == 'spotify-web' || track.id.length == 22
-              ? track.id
-              : '',
-          'service': service,
-        },
-      ]));
+      unawaited(
+        PlatformBridge.preWarmTrackCache([
+          {
+            'isrc': track.isrc ?? '',
+            'track_name': track.name,
+            'artist_name': track.artistName,
+            'spotify_id': track.source == 'spotify-web' || track.id.length == 22
+                ? track.id
+                : '',
+            'service': service,
+          },
+        ]),
+      );
 
       // Step 2: Resolve stream URI ahead of time
       final tempDir = await getTemporaryDirectory();
@@ -3952,7 +3962,9 @@ class PlaybackController extends Notifier<PlaybackState> {
         trackName: track.name,
         artistName: track.artistName,
         albumName: track.albumName,
-        spotifyId: track.source == 'spotify-web' || track.id.length == 22 ? track.id : '',
+        spotifyId: track.source == 'spotify-web' || track.id.length == 22
+            ? track.id
+            : '',
         deezerId: track.deezerId ?? '',
         isrc: track.isrc ?? '',
         service: service,
@@ -3974,7 +3986,7 @@ class PlaybackController extends Notifier<PlaybackState> {
 
       if (response['success'] == true && response['file_path'] != null) {
         final String filePath = response['file_path'];
-        
+
         int parseSafeInt(dynamic val) {
           if (val == null) return 0;
           if (val is int) return val;
@@ -3995,9 +4007,15 @@ class PlaybackController extends Notifier<PlaybackState> {
         item = item.copyWith(
           sourceUri: filePath,
           format: response['format'] ?? 'flac',
-          bitrate: parseSafeInt(response['bitrate'] ?? response['bit_rate'] ?? 0),
-          sampleRate: parseSafeInt(response['sample_rate'] ?? response['actual_sample_rate'] ?? 0),
-          bitDepth: parseSafeInt(response['bit_depth'] ?? response['actual_bit_depth'] ?? 0),
+          bitrate: parseSafeInt(
+            response['bitrate'] ?? response['bit_rate'] ?? 0,
+          ),
+          sampleRate: parseSafeInt(
+            response['sample_rate'] ?? response['actual_sample_rate'] ?? 0,
+          ),
+          bitDepth: parseSafeInt(
+            response['bit_depth'] ?? response['actual_bit_depth'] ?? 0,
+          ),
           fileSize: resolvedFileSize,
           service: service,
         );

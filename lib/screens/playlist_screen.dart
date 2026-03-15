@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -12,6 +13,8 @@ import 'package:hires_streamer/providers/local_library_provider.dart';
 import 'package:hires_streamer/providers/playback_provider.dart';
 import 'package:hires_streamer/widgets/download_service_picker.dart';
 import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
+import 'package:hires_streamer/widgets/streaming_header.dart';
+import 'package:hires_streamer/widgets/pinned_button_bar.dart';
 
 class PlaylistScreen extends ConsumerStatefulWidget {
   final String playlistName;
@@ -161,6 +164,15 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
         controller: _scrollController,
         slivers: [
           _buildAppBar(context, colorScheme),
+          PinnedButtonBar(
+            onPlay: _tracks.isEmpty
+                ? null
+                : () => ref.read(playbackProvider.notifier).playTrackList(
+                      _tracks,
+                      shuffle: false,
+                    ),
+            onShuffle: _tracks.isEmpty ? null : _shufflePlayLocal,
+          ),
           _buildInfoCard(context, colorScheme),
           _buildTrackList(context, colorScheme),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -170,168 +182,30 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
   }
 
   Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
-    final expandedHeight = _calculateExpandedHeight(context);
+    final imageUrl = _highResCoverUrl(widget.coverUrl) ?? widget.coverUrl;
 
-    return SliverAppBar(
-      expandedHeight: expandedHeight,
-      pinned: true,
-      stretch: true,
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      title: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _showTitleInAppBar ? 1.0 : 0.0,
-        child: Text(
-          widget.playlistName,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final collapseRatio =
-              (constraints.maxHeight - kToolbarHeight) /
-              (expandedHeight - kToolbarHeight);
-          final showContent = collapseRatio > 0.3;
+    String? subtitle;
+    if (_tracks.isNotEmpty) {
+      subtitle = context.l10n.tracksCount(_tracks.length);
+    }
 
-          return FlexibleSpaceBar(
-            collapseMode: CollapseMode.pin,
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Full-screen cover background
-                if (widget.coverUrl != null)
-                  CachedNetworkImage(
-                    imageUrl:
-                        _highResCoverUrl(widget.coverUrl) ?? widget.coverUrl!,
-                    fit: BoxFit.cover,
-                    cacheManager: CoverCacheManager.instance,
-                    placeholder: (_, _) =>
-                        Container(color: colorScheme.surface),
-                    errorWidget: (_, _, _) =>
-                        Container(color: colorScheme.surface),
-                  )
-                else
-                  Container(
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.playlist_play,
-                      size: 80,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                // Bottom gradient for readability
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: expandedHeight * 0.65,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Playlist info overlay at bottom
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 40,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: showContent ? 1.0 : 0.0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.playlistName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (_tracks.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.playlist_play,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  context.l10n.tracksCount(_tracks.length),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildPlayAllButton(),
-                              const SizedBox(width: 12),
-                              _buildDownloadAllCenterButton(context),
-                              const SizedBox(width: 12),
-                              _buildShufflePlayButton(),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    return StreamingHeader(
+      title: widget.playlistName,
+      subtitle: subtitle,
+      imageUrl: imageUrl,
+      expandedHeight: 380,
+      fallbackIcon: Icons.playlist_play,
+      actions: [
+        if (_tracks.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => _confirmDownloadAll(context),
+              icon: const Icon(Icons.download_rounded),
+              tooltip: 'Download All',
             ),
-            stretchModes: const [StretchMode.zoomBackground],
-          );
-        },
-      ),
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
-            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
+      ],
     );
   }
 
@@ -435,75 +309,18 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     }
   }
 
-  // ── Shuffle / Love / Download buttons ──
-
-  Widget _buildCircleButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback? onPressed,
-  }) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.15),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 22, color: Colors.white),
-        tooltip: tooltip,
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
-
-  Widget _buildPlayAllButton() {
-    return _buildCircleButton(
-      icon: Icons.play_arrow_rounded,
-      tooltip: 'Play All',
-      onPressed: _tracks.isEmpty
-          ? null
-          : () {
-              ref.read(playbackProvider.notifier).playTrackList(_tracks);
-            },
-    );
-  }
-
-  Widget _buildDownloadAllCenterButton(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: _tracks.isEmpty ? null : () => _confirmDownloadAll(context),
-      icon: const Icon(Icons.download_rounded, size: 18),
-      label: Text(context.l10n.downloadAllCount(_tracks.length)),
-      style: FilledButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        minimumSize: const Size(0, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-    );
-  }
-
-  Widget _buildShufflePlayButton() {
-    return _buildCircleButton(
-      icon: Icons.shuffle_rounded,
-      tooltip: 'Shuffle Play',
-      onPressed: _tracks.isEmpty ? null : _shufflePlayLocal,
-    );
-  }
-
   void _shufflePlayLocal() {
     if (_tracks.isEmpty) return;
-    final shuffled = [..._tracks]..shuffle();
+    final startIndex = Random().nextInt(_tracks.length);
     final messenger = ScaffoldMessenger.of(context);
-    ref.read(playbackProvider.notifier).playTrackList(shuffled).catchError((e) {
+    ref.read(playbackProvider.notifier).playTrackList(
+          _tracks,
+          startIndex: startIndex,
+          shuffle: true,
+        ).catchError((e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Cannot shuffle play local tracks: $e')),
+        SnackBar(content: Text('Cannot shuffle play tracks: $e')),
       );
     });
   }

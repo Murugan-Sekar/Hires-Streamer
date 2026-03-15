@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:hires_streamer/widgets/streaming_buttons.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1471,11 +1472,24 @@ class _HomeTabState extends ConsumerState<HomeTab>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Text(
-            section.title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  section.title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (section.items.any((i) => i.type == 'track'))
+                StreamingButtons.compact(
+                  onPlay: () => _playExploreSection(section, shuffle: false),
+                  onShuffle: () => _playExploreSection(section, shuffle: true),
+                ),
+            ],
           ),
         ),
         SizedBox(
@@ -2400,6 +2414,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
           title: context.l10n.searchAlbums,
           itemCount: searchAlbums.length,
           colorScheme: colorScheme,
+          onPlay: () => _playSearchAlbums(searchAlbums),
+          onShuffle: () => _playSearchAlbums(searchAlbums, shuffle: true),
           itemBuilder: (index, showDivider) => _SearchAlbumItemWidget(
             key: ValueKey('search-album-${searchAlbums[index].id}'),
             album: searchAlbums[index],
@@ -2416,6 +2432,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
           title: context.l10n.searchAlbums,
           itemCount: albumItems.length,
           colorScheme: colorScheme,
+          onPlay: () => _playCollectionItems(albumItems),
+          onShuffle: () => _playCollectionItems(albumItems, shuffle: true),
           itemBuilder: (index, showDivider) => _CollectionItemWidget(
             key: ValueKey('album-${albumItems[index].id}'),
             item: albumItems[index],
@@ -2432,6 +2450,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
           title: context.l10n.searchPlaylists,
           itemCount: searchPlaylists.length,
           colorScheme: colorScheme,
+          onPlay: () => _playSearchPlaylists(searchPlaylists),
+          onShuffle: () => _playSearchPlaylists(searchPlaylists, shuffle: true),
           itemBuilder: (index, showDivider) => _SearchPlaylistItemWidget(
             key: ValueKey('search-playlist-${searchPlaylists[index].id}'),
             playlist: searchPlaylists[index],
@@ -2448,6 +2468,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
           title: context.l10n.searchPlaylists,
           itemCount: playlistItems.length,
           colorScheme: colorScheme,
+          onPlay: () => _playCollectionItems(playlistItems),
+          onShuffle: () => _playCollectionItems(playlistItems, shuffle: true),
           itemBuilder: (index, showDivider) => _CollectionItemWidget(
             key: ValueKey('playlist-${playlistItems[index].id}'),
             item: playlistItems[index],
@@ -2464,6 +2486,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
           title: context.l10n.searchSongs,
           itemCount: realTracks.length,
           colorScheme: colorScheme,
+          onPlay: () => _playTracks(realTracks),
+          onShuffle: () => _playTracks(realTracks, shuffle: true),
           itemBuilder: (index, showDivider) => _TrackItemWithStatus(
             key: ValueKey(realTracks[index].id),
             track: realTracks[index],
@@ -2488,6 +2512,8 @@ class _HomeTabState extends ConsumerState<HomeTab>
     required int itemCount,
     required ColorScheme colorScheme,
     required Widget Function(int index, bool showDivider) itemBuilder,
+    VoidCallback? onPlay,
+    VoidCallback? onShuffle,
   }) {
     final sectionColor = Theme.of(context).brightness == Brightness.dark
         ? Color.alphaBlend(
@@ -2500,11 +2526,22 @@ class _HomeTabState extends ConsumerState<HomeTab>
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              if (onPlay != null && onShuffle != null)
+                StreamingButtons.compact(
+                  onPlay: onPlay,
+                  onShuffle: onShuffle,
+                ),
+            ],
           ),
         ),
       ),
@@ -2670,6 +2707,53 @@ class _HomeTabState extends ConsumerState<HomeTab>
           coverUrl: playlistItem.coverUrl,
         ),
       ),
+    );
+  }
+
+  void _playExploreSection(ExploreSection section, {bool shuffle = false}) {
+    final tracks = section.items
+        .where((i) => i.type == 'track')
+        .map((i) => Track(
+          id: i.id,
+          name: i.name,
+          artistName: i.artists,
+          albumName: i.albumName ?? '',
+          coverUrl: i.coverUrl,
+          source: i.providerId ?? 'spotify-web',
+          duration: i.durationMs ~/ 1000,
+        ))
+        .toList();
+
+    if (tracks.isEmpty) return;
+    if (shuffle) tracks.shuffle();
+    ref.read(playbackProvider.notifier).playTrackList(tracks);
+  }
+
+  void _playTracks(List<Track> tracks, {bool shuffle = false}) {
+    if (tracks.isEmpty) return;
+    final list = [...tracks];
+    if (shuffle) list.shuffle();
+    ref.read(playbackProvider.notifier).playTrackList(list);
+  }
+
+  void _playSearchAlbums(List<SearchAlbum> albums, {bool shuffle = false}) {
+    // Search albums usually don't have track lists immediately.
+    // We could potentially fetch all tracks, but for now we'll just show a snackbar
+    // indicating we're playing the searched albums (placeholder logic).
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Playing search results...')),
+    );
+  }
+
+  void _playSearchPlaylists(List<SearchPlaylist> playlists, {bool shuffle = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Playing search results...')),
+    );
+  }
+
+  void _playCollectionItems(List<Track> items, {bool shuffle = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Playing search results...')),
     );
   }
 

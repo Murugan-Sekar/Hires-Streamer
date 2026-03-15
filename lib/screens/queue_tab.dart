@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -841,11 +842,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
   }
 
   void _animateToFilterPage(int index) {
-    _filterPageController?.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-    );
+    _filterPageController?.jumpToPage(index);
   }
 
   void _enterSelectionMode(String itemId) {
@@ -2475,58 +2472,6 @@ class _QueueTabState extends ConsumerState<QueueTab> {
         .then((_) => _searchFocusNode.unfocus());
   }
 
-  Future<void> _showCreatePlaylistDialog(BuildContext context) async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final playlistName = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(dialogContext.l10n.collectionCreatePlaylist),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: dialogContext.l10n.collectionPlaylistNameHint,
-              ),
-              validator: (value) {
-                final trimmed = value?.trim() ?? '';
-                if (trimmed.isEmpty) {
-                  return dialogContext.l10n.collectionPlaylistNameRequired;
-                }
-                return null;
-              },
-              onFieldSubmitted: (_) {
-                if (formKey.currentState?.validate() != true) return;
-                Navigator.of(dialogContext).pop(controller.text.trim());
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(dialogContext.l10n.dialogCancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() != true) return;
-                Navigator.of(dialogContext).pop(controller.text.trim());
-              },
-              child: Text(dialogContext.l10n.actionCreate),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (playlistName == null || playlistName.isEmpty) return;
-    await ref
-        .read(libraryCollectionsProvider.notifier)
-        .createPlaylist(playlistName);
-  }
 
   /// Build a playlist cover thumbnail (custom cover > first track cover > icon fallback).
   /// Pass a finite [size] (e.g. 56) for list view, or `null` for grid view
@@ -2813,6 +2758,24 @@ class _QueueTabState extends ConsumerState<QueueTab> {
       );
     });
 
+    final filterDataForCount = getFilterData(historyFilterMode);
+    final filteredAlbumsForCount =
+        filterDataForCount.filteredGroupedAlbums.length +
+        filterDataForCount.filteredGroupedLocalAlbums.length;
+
+    String? headerCountText;
+    if (historyFilterMode == 'all') {
+      headerCountText =
+          '${filterDataForCount.totalTrackCount} ${filterDataForCount.totalTrackCount == 1 ? 'track' : 'tracks'}';
+    } else if (historyFilterMode == 'albums') {
+      headerCountText =
+          '$filteredAlbumsForCount ${filteredAlbumsForCount == 1 ? 'album' : 'albums'}';
+    } else if (historyFilterMode == 'folders') {
+      final folderCount = filterDataForCount.filteredRootFolderEntries.length;
+      headerCountText =
+          '$folderCount ${folderCount == 1 ? 'folder' : 'folders'}';
+    }
+
     return PopScope(
       canPop: !_isSelectionMode && !_isPlaylistSelectionMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -2838,13 +2801,183 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                   left: 24,
                   right: 24,
                 ),
-                child: Text(
-                  context.l10n.navLibrary,
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          context.l10n.navLibrary,
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (headerCountText != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              headerCountText,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Pinned Search bar
+                    if (allHistoryItems.isNotEmpty ||
+                        hasQueueItems ||
+                        localLibraryItems.isNotEmpty)
+                      TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        autofocus: false,
+                        canRequestFocus: true,
+                        decoration: InputDecoration(
+                          hintText: context.l10n.historySearchHint,
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _clearSearch();
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide(
+                              color: colorScheme.outlineVariant,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide(
+                              color: colorScheme.outlineVariant,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(28),
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2.5,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: _onSearchChanged,
+                        onTapOutside: (_) {
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Pinned Tabs
+                    if (allHistoryItems.isNotEmpty || localLibraryItems.isNotEmpty)
+                      Builder(
+                        builder: (context) {
+                          // Compute filtered counts for tab chips
+                          int filteredAllCount;
+                          int filteredAlbumCount;
+
+                          if (_activeFilterCount == 0 &&
+                              _searchQuery.isEmpty) {
+                            filteredAllCount =
+                                allHistoryItems.length +
+                                localLibraryItems.length;
+                            filteredAlbumCount = albumCount;
+                          } else {
+                            final allData = getFilterData('all');
+                            final albumsData = getFilterData('albums');
+                            filteredAllCount = allData.totalTrackCount;
+                            filteredAlbumCount =
+                                albumsData.totalAlbumCount;
+                          }
+
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _FilterChip(
+                                  label: context.l10n.historyFilterAll,
+                                  count: filteredAllCount,
+                                  isSelected: historyFilterMode == 'all',
+                                  onTap: () {
+                                    _animateToFilterPage(0);
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                _FilterChip(
+                                  label: context.l10n.historyFilterAlbums,
+                                  count: filteredAlbumCount,
+                                  isSelected:
+                                      historyFilterMode == 'albums',
+                                  onTap: () {
+                                    _animateToFilterPage(1);
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                _FilterChip(
+                                  label:
+                                      context.l10n.historyFilterFolders,
+                                  count: getFilterData(
+                                    'folders',
+                                  ).filteredRootFolderEntries.length,
+                                  isSelected:
+                                      historyFilterMode == 'folders',
+                                  onTap: () {
+                                    _animateToFilterPage(2);
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      
+                    const SizedBox(height: 8),
+                    
+                    // Pinned Play/Shuffle buttons - restricted to 'All' tab with animation
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            axisAlignment: -1,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: (historyFilterMode == 'all' && (allHistoryItems.isNotEmpty || localLibraryItems.isNotEmpty))
+                        ? _buildStationaryPlayButtons(
+                            context,
+                            colorScheme,
+                            onPlay: () => _playAllTracks(selectionItems),
+                            onShuffle: () => _playAllTracks(selectionItems, shuffle: true),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('empty_header_buttons')),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -2854,148 +2987,17 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                   ).copyWith(overscroll: false),
                   child: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                      // Search bar - always at top
-                      if (allHistoryItems.isNotEmpty ||
-                          hasQueueItems ||
-                          localLibraryItems.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: TextField(
-                                controller: _searchController,
-                                focusNode: _searchFocusNode,
-                                autofocus: false,
-                                canRequestFocus: true,
-                                decoration: InputDecoration(
-                                  hintText: context.l10n.historySearchHint,
-                                  prefixIcon: const Icon(Icons.search),
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            _clearSearch();
-                                            FocusScope.of(context).unfocus();
-                                          },
-                                        )
-                                      : null,
-                                  filled: true,
-                                  fillColor:
-                                      colorScheme.surfaceContainerHighest,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(28),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.outlineVariant,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(28),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.outlineVariant,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(28),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.primary,
-                                      width: 2.5,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                ),
-                                onChanged: _onSearchChanged,
-                                onTapOutside: (_) {
-                                  FocusScope.of(context).unfocus();
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-
                       if (hasQueueItems)
                         _buildQueueHeaderSliver(context, colorScheme),
 
                       if (hasQueueItems)
                         _buildQueueItemsSliver(context, colorScheme),
-
-                      if (allHistoryItems.isNotEmpty ||
-                          localLibraryItems.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                            child: Builder(
-                              builder: (context) {
-                                // Compute filtered counts for tab chips
-                                int filteredAllCount;
-                                int filteredAlbumCount;
-
-                                if (_activeFilterCount == 0 &&
-                                    _searchQuery.isEmpty) {
-                                  filteredAllCount =
-                                      allHistoryItems.length +
-                                      localLibraryItems.length;
-                                  filteredAlbumCount = albumCount;
-                                } else {
-                                  final allData = getFilterData('all');
-                                  final albumsData = getFilterData('albums');
-                                  filteredAllCount = allData.totalTrackCount;
-                                  filteredAlbumCount =
-                                      albumsData.totalAlbumCount;
-                                }
-
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      _FilterChip(
-                                        label: context.l10n.historyFilterAll,
-                                        count: filteredAllCount,
-                                        isSelected: historyFilterMode == 'all',
-                                        onTap: () {
-                                          _animateToFilterPage(0);
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _FilterChip(
-                                        label: context.l10n.historyFilterAlbums,
-                                        count: filteredAlbumCount,
-                                        isSelected:
-                                            historyFilterMode == 'albums',
-                                        onTap: () {
-                                          _animateToFilterPage(1);
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _FilterChip(
-                                        label:
-                                            context.l10n.historyFilterFolders,
-                                        count: getFilterData(
-                                          'folders',
-                                        ).filteredRootFolderEntries.length,
-                                        isSelected:
-                                            historyFilterMode == 'folders',
-                                        onTap: () {
-                                          _animateToFilterPage(2);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
                     ],
                     body: PageView.builder(
                       controller: _filterPageController!,
-                      physics: const ClampingScrollPhysics(),
+                      // Disable swipe gestures as per user request
+                      physics: const NeverScrollableScrollPhysics(),
+                      // physics: const ClampingScrollPhysics(),
                       onPageChanged: _onFilterPageChanged,
                       itemCount: _filterModes.length,
                       itemBuilder: (context, index) {
@@ -3560,93 +3562,18 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     final unifiedItems = filterData.unifiedItems;
     final filteredUnifiedItems = filterData.filteredUnifiedItems;
     final totalTrackCount = filterData.totalTrackCount;
-    final totalAlbumCount = filterData.totalAlbumCount;
 
     return CustomScrollView(
       slivers: [
         if (totalTrackCount > 0 && filterMode == 'all')
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                children: [
-                  Text(
-                    '$totalTrackCount ${totalTrackCount == 1 ? 'track' : 'tracks'}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Filter button with long-press to reset
-                  if (!_isSelectionMode)
-                    GestureDetector(
-                      onLongPress: _activeFilterCount > 0
-                          ? _resetFilters
-                          : null,
-                      child: TextButton.icon(
-                        onPressed: () =>
-                            _showFilterSheet(context, unifiedItems),
-                        icon: Badge(
-                          isLabelVisible: _activeFilterCount > 0,
-                          label: Text('$_activeFilterCount'),
-                          child: const Icon(Icons.filter_list, size: 18),
-                        ),
-                        label: Text(context.l10n.libraryFilterTitle),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ),
-                  if (!_isSelectionMode && filteredUnifiedItems.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: () => _showCreatePlaylistDialog(context),
-                      icon: const Icon(Icons.add, size: 20),
-                      label: Text(context.l10n.collectionCreatePlaylist),
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
         // Collection folders as list items (Spotify-style) in "All" tab
         // are now rendered inline with tracks below (unified sliver)
         if ((filteredGroupedAlbums.isNotEmpty ||
                 filteredGroupedLocalAlbums.isNotEmpty) &&
             filterMode == 'albums')
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                children: [
-                  Text(
-                    '$totalAlbumCount ${totalAlbumCount == 1 ? 'album' : 'albums'}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onLongPress: _activeFilterCount > 0 ? _resetFilters : null,
-                    child: TextButton.icon(
-                      onPressed: () => _showFilterSheet(context, unifiedItems),
-                      icon: Badge(
-                        isLabelVisible: _activeFilterCount > 0,
-                        label: Text('$_activeFilterCount'),
-                        child: const Icon(Icons.filter_list, size: 18),
-                      ),
-                      label: Text(context.l10n.libraryFilterTitle),
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
         // Albums empty state with filter button
         if (filteredGroupedAlbums.isEmpty &&
@@ -3726,9 +3653,9 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                crossAxisCount: 3,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
                 childAspectRatio: 0.75,
               ),
               delegate: SliverChildBuilderDelegate(
@@ -3766,9 +3693,9 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                crossAxisCount: 3,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
                 childAspectRatio: 0.75,
               ),
               delegate: SliverChildBuilderDelegate((context, index) {
@@ -4368,6 +4295,117 @@ class _QueueTabState extends ConsumerState<QueueTab> {
         .map((id) => itemsById[id])
         .whereType<UnifiedLibraryItem>()
         .toList(growable: false);
+  }
+
+  void _playAllTracks(List<UnifiedLibraryItem> items, {bool shuffle = false}) {
+    if (items.isEmpty) return;
+
+    final tracks = items.map((i) => i.toTrack()).toList();
+
+    if (!shuffle) {
+      tracks.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+    }
+
+    final playbackService = ref.read(playbackProvider.notifier);
+    if (shuffle) {
+      final startIndex = Random().nextInt(tracks.length);
+      playbackService.playTrackList(
+        tracks,
+        startIndex: startIndex,
+        shuffle: true,
+      );
+    } else {
+      playbackService.playTrackList(tracks, startIndex: 0, shuffle: false);
+    }
+  }
+
+  Widget _buildStationaryPlayButtons(
+    BuildContext context,
+    ColorScheme colorScheme, {
+    required VoidCallback? onPlay,
+    required VoidCallback? onShuffle,
+  }) {
+    final primaryColor = colorScheme.primary;
+    final onPrimary = colorScheme.onPrimary;
+
+    return Container(
+      key: const ValueKey('library_playback_buttons'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(27),
+                gradient: LinearGradient(
+                  colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onPlay,
+                  borderRadius: BorderRadius.circular(27),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_arrow_rounded, color: onPrimary, size: 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Play',
+                        style: TextStyle(
+                          color: onPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.surfaceContainerHigh,
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+              boxShadow: [],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onShuffle,
+                customBorder: const CircleBorder(),
+                child: Center(
+                  child: Icon(
+                    Icons.shuffle_rounded,
+                    size: 26,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _isLocalOnlySelection(List<UnifiedLibraryItem> allItems) {

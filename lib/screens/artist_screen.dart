@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,8 @@ import 'package:hires_streamer/screens/album_screen.dart';
 import 'package:hires_streamer/screens/home_tab.dart' show ExtensionAlbumScreen;
 import 'package:hires_streamer/widgets/download_service_picker.dart';
 import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
+import 'package:hires_streamer/widgets/streaming_header.dart';
+import 'package:hires_streamer/widgets/pinned_button_bar.dart';
 import 'package:hires_streamer/utils/clickable_metadata.dart';
 
 /// Simple in-memory cache for artist data
@@ -381,6 +384,24 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                   colorScheme,
                   albums: albums,
                   hasDiscography: hasDiscography,
+                ),
+                PinnedButtonBar(
+                  onPlay: (_topTracks != null && _topTracks!.isNotEmpty)
+                      ? () => ref.read(playbackProvider.notifier).playTrackList(
+                            _topTracks!,
+                            shuffle: false,
+                          )
+                      : null,
+                  onShuffle: (_topTracks != null && _topTracks!.isNotEmpty)
+                      ? () {
+                          final startIndex = Random().nextInt(_topTracks!.length);
+                          ref.read(playbackProvider.notifier).playTrackList(
+                                _topTracks!,
+                                startIndex: startIndex,
+                                shuffle: true,
+                              );
+                        }
+                      : null,
                 ),
                 if (_isLoadingDiscography)
                   const SliverToBoxAdapter(
@@ -1014,18 +1035,7 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     required List<ArtistAlbum> albums,
     required bool hasDiscography,
   }) {
-    String? imageUrl = _headerImageUrl;
-    if (imageUrl == null || imageUrl.isEmpty) {
-      imageUrl = widget.headerImageUrl;
-    }
-    if (imageUrl == null || imageUrl.isEmpty) {
-      imageUrl = widget.coverUrl;
-    }
-
-    final hasValidImage =
-        imageUrl != null &&
-        imageUrl.isNotEmpty &&
-        Uri.tryParse(imageUrl)?.hasAuthority == true;
+    String? imageUrl = _headerImageUrl ?? widget.headerImageUrl ?? widget.coverUrl;
 
     String? listenersText;
     final listeners = _monthlyListeners ?? widget.monthlyListeners;
@@ -1036,167 +1046,27 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
       );
     }
 
-    return SliverAppBar(
+    return StreamingHeader(
+      title: widget.artistName,
+      subtitle: listenersText,
+      imageUrl: imageUrl,
       expandedHeight: hasDiscography ? 420 : 380,
-      pinned: true,
-      stretch: true,
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      title: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _showTitleInAppBar ? 1.0 : 0.0,
-        child: Text(
-          widget.artistName,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.none,
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (hasValidImage)
-              CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter, // Show top of image (faces)
-                memCacheWidth: 800,
-                cacheManager: CoverCacheManager.instance,
-                placeholder: (context, url) =>
-                    Container(color: colorScheme.surfaceContainerHighest),
-                errorWidget: (context, url, error) => Container(
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.person,
-                    size: 80,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              )
-            else
-              Container(
-                color: colorScheme.surfaceContainerHighest,
-                child: Icon(
-                  Icons.person,
-                  size: 80,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+      fallbackIcon: Icons.person,
+      actions: [
+        if (hasDiscography && !_isSelectionMode)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => _showDiscographyOptions(
+                context,
+                colorScheme,
+                albums,
               ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.black.withValues(alpha: 0.7),
-                    colorScheme.surface,
-                  ],
-                  stops: const [0.0, 0.5, 0.75, 1.0],
-                ),
-              ),
+              icon: const Icon(Icons.download_rounded),
+              tooltip: context.l10n.discographyDownload,
             ),
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.artistName,
-                          style: Theme.of(context).textTheme.headlineLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 4,
-                                    color: Colors.black.withValues(alpha: 0.5),
-                                  ),
-                                ],
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (listenersText != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            listenersText,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  shadows: [
-                                    Shadow(
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 2,
-                                      color: Colors.black.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  // Download Discography button (icon only, right-aligned)
-                  if (hasDiscography && !_isSelectionMode) ...[
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        onPressed: () => _showDiscographyOptions(
-                          context,
-                          colorScheme,
-                          albums,
-                        ),
-                        icon: const Icon(Icons.download_rounded, size: 26),
-                        color: Colors.black87,
-                        tooltip: context.l10n.discographyDownload,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-        stretchModes: const [
-          StretchMode.zoomBackground,
-          StretchMode.blurBackground,
-        ],
-      ),
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
-            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
+      ],
     );
   }
 

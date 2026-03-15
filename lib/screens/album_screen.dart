@@ -1,18 +1,19 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:hires_streamer/services/cover_cache_manager.dart';
+import 'package:hires_streamer/providers/local_library_provider.dart';
+import 'package:hires_streamer/services/platform_bridge.dart';
+import 'package:hires_streamer/utils/file_access.dart';
 import 'package:hires_streamer/l10n/l10n.dart';
 import 'package:hires_streamer/models/track.dart';
 import 'package:hires_streamer/providers/download_queue_provider.dart';
 import 'package:hires_streamer/providers/playback_provider.dart';
 import 'package:hires_streamer/providers/settings_provider.dart';
 import 'package:hires_streamer/providers/recent_access_provider.dart';
-import 'package:hires_streamer/providers/local_library_provider.dart';
-import 'package:hires_streamer/services/platform_bridge.dart';
-import 'package:hires_streamer/utils/file_access.dart';
 import 'package:hires_streamer/widgets/track_collection_quick_actions.dart';
 import 'package:hires_streamer/widgets/download_service_picker.dart';
+import 'package:hires_streamer/widgets/streaming_header.dart';
+import 'package:hires_streamer/widgets/pinned_button_bar.dart';
 import 'package:hires_streamer/utils/clickable_metadata.dart';
 
 class _AlbumCache {
@@ -147,20 +148,6 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     return url;
   }
 
-  String _formatReleaseDate(String date) {
-    if (date.length >= 10) {
-      final parts = date.substring(0, 10).split('-');
-      if (parts.length == 3) {
-        return '${parts[2]}/${parts[1]}/${parts[0]}';
-      }
-    } else if (date.length >= 7) {
-      final parts = date.split('-');
-      if (parts.length >= 2) {
-        return '${parts[1]}/${parts[0]}';
-      }
-    }
-    return date;
-  }
 
   Future<void> _fetchTracks() async {
     setState(() => _isLoading = true);
@@ -236,7 +223,16 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          _buildAppBar(context, colorScheme, pageBackgroundColor),
+          _buildAppBar(context, colorScheme),
+          PinnedButtonBar(
+            onPlay: _tracks == null || _tracks!.isEmpty
+                ? null
+                : () => ref.read(playbackProvider.notifier).playTrackList(
+                      _tracks!,
+                      shuffle: false,
+                    ),
+            onShuffle: _tracks == null || _tracks!.isEmpty ? null : _shufflePlayLocal,
+          ),
           _buildInfoCard(context, colorScheme),
           if (_isLoading)
             const SliverToBoxAdapter(
@@ -261,244 +257,32 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     );
   }
 
-  Widget _buildAppBar(
-    BuildContext context,
-    ColorScheme colorScheme,
-    Color pageBackgroundColor,
-  ) {
+  Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
     final expandedHeight = _calculateExpandedHeight(context);
-    final tracks = _tracks ?? [];
-    final artistName = tracks.isNotEmpty ? tracks.first.artistName : null;
-    final releaseDate = tracks.isNotEmpty ? tracks.first.releaseDate : null;
+    final imageUrl = _highResCoverUrl(widget.coverUrl) ?? widget.coverUrl;
 
-    return SliverAppBar(
+    String? subtitle;
+    if (_tracks != null && _tracks!.isNotEmpty) {
+      subtitle = context.l10n.tracksCount(_tracks!.length);
+    }
+
+    return StreamingHeader(
+      title: widget.albumName,
+      subtitle: subtitle,
+      imageUrl: imageUrl,
       expandedHeight: expandedHeight,
-      pinned: true,
-      stretch: true,
-      backgroundColor: pageBackgroundColor,
-      surfaceTintColor: Colors.transparent,
-      title: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _showTitleInAppBar ? 1.0 : 0.0,
-        child: Text(
-          widget.albumName,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final collapseRatio =
-              (constraints.maxHeight - kToolbarHeight) /
-              (expandedHeight - kToolbarHeight);
-          final showContent = collapseRatio > 0.3;
-
-          return FlexibleSpaceBar(
-            collapseMode: CollapseMode.pin,
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Full-screen cover background (no blur, full resolution)
-                if (widget.coverUrl != null)
-                  CachedNetworkImage(
-                    imageUrl:
-                        _highResCoverUrl(widget.coverUrl) ?? widget.coverUrl!,
-                    fit: BoxFit.cover,
-                    cacheManager: CoverCacheManager.instance,
-                    placeholder: (_, _) =>
-                        Container(color: colorScheme.surface),
-                    errorWidget: (_, _, _) =>
-                        Container(color: colorScheme.surface),
-                  )
-                else
-                  Container(
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.album,
-                      size: 80,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                // Bottom gradient for readability
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: expandedHeight * 0.65,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Album info overlay at bottom
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 40,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: showContent ? 1.0 : 0.0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.albumName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (artistName != null && artistName.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          ClickableArtistName(
-                            artistName: artistName,
-                            artistId: _artistId,
-                            coverUrl: widget.coverUrl,
-                            extensionId: widget.extensionId,
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        if (tracks.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.music_note,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      context.l10n.tracksCount(tracks.length),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (releaseDate != null && releaseDate.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _formatReleaseDate(releaseDate),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildPlayAllButton(),
-                              const SizedBox(width: 12),
-                              FilledButton.icon(
-                                onPressed: () => _downloadAll(context),
-                                icon: Icon(Icons.download, size: 18),
-                                label: Text(
-                                  context.l10n.downloadAllCount(tracks.length),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.black87,
-                                  minimumSize: const Size(0, 48),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              _buildShufflePlayButton(),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+      fallbackIcon: Icons.album,
+      actions: [
+        if (_tracks != null && _tracks!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => _downloadAll(context),
+              icon: const Icon(Icons.download_rounded),
+              tooltip: 'Download All',
             ),
-            stretchModes: const [StretchMode.zoomBackground],
-          );
-        },
-      ),
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
-            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
+      ],
     );
   }
 
@@ -590,56 +374,16 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     }
   }
 
-  Widget _buildCircleButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback? onPressed,
-  }) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.15),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 22, color: Colors.white),
-        tooltip: tooltip,
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
-
-  Widget _buildPlayAllButton() {
-    return _buildCircleButton(
-      icon: Icons.play_arrow_rounded,
-      tooltip: 'Play All',
-      onPressed: _tracks == null || _tracks!.isEmpty
-          ? null
-          : () {
-              ref.read(playbackProvider.notifier).playTrackList(_tracks!);
-            },
-    );
-  }
-
-  Widget _buildShufflePlayButton() {
-    return _buildCircleButton(
-      icon: Icons.shuffle_rounded,
-      tooltip: 'Shuffle Play',
-      onPressed: _tracks == null || _tracks!.isEmpty ? null : _shufflePlayLocal,
-    );
-  }
 
   void _shufflePlayLocal() {
     if (_tracks == null || _tracks!.isEmpty) return;
-    final shuffled = [..._tracks!]..shuffle();
+    final startIndex = Random().nextInt(_tracks!.length);
     final messenger = ScaffoldMessenger.of(context);
-    ref.read(playbackProvider.notifier).playTrackList(shuffled).catchError((e) {
+    ref.read(playbackProvider.notifier).playTrackList(
+          _tracks!,
+          startIndex: startIndex,
+          shuffle: true,
+        ).catchError((e) {
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Cannot shuffle play tracks: $e')),

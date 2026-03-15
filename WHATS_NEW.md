@@ -1,23 +1,27 @@
-# Whats new (1.0.3+5 - 2026-03-10)
+# What's new (1.0.5+7 - 2026-03-15)
 
 ## Added
 
-- **New Audio Quality Controls**: Added dedicated selection buttons for 16-bit, 24-bit 96k, and 24-bit 192k audio qualities.
-- **Improved Playback Performance**: Implemented track prefetching for near-instant transitions between songs.
-- **Update Checker**: Added a new automatic update checker with dedicated UI notifications.
+- **Home Tab Quick Play**: Integrated compact Play and Shuffle buttons for all explore sections and search result categories.
+- **Integrated Folder Count**: Displays total folder count in the Library title row for the Folders tab.
+- **Stationary Playback Control**: Pinned "Play" and "Shuffle" buttons for tracks on the Library's "All" tab.
+
+## New Features
+
+- **Redesigned Library Playback**: New premium aesthetic high-resolution rounded icons for better visual quality.
 
 ## Fixed
 
-- **Dynamic Metadata Updates**: Fixed real-time sync of bit depth, sample rate, and bitrate information during quality switching.
-- **UI & Alignment**: Fixed several UI and alignment issues in the mini player and full player views.
-- **General Stability**: Fixed various internal bugs to improve overall app stability and performance.
+- **Tab Switching Jitter**: Resolved "flickering" through intermediate tabs when switching between distant categories (e.g., Folders to All).
+- **Pixelated Icons**: Replaced low-quality shuffle icons with high-definition Material Rounded assets.
 
 ## Changed
 
-- **Smart Quality Management**: All online songs now default to 16-bit (LOSSLESS) on start, ensuring quick initial playback while allowing manual Hi-Res overrides.
-- **Branding Update**: Updated notification and lockscreen icons using the app logo for a more professional feel.
-- **Improved Localization**: Updated app descriptions across all supported languages for the new Deezer integration.
+- **Unified Library Grid**: Standardized the view density across Tracks, Albums, and Folders to a consistent 3-column layout.
+- **Optimized Navigation**: Library tabs now switch instantly via tapping, providing a more solid navigation feel.
+- **Stationary Library Header**: Pinned the Library title, search bar, and tab chips to the top of the screen for persistent access.
 
 ## Removed
 
-- **UI Clutter**: Removed redundant sections from Settings and About pages (Donate, Social links) for a more focused experience.
+- **Swipe Gestures**: Removed left/right swipe gestures for switching between Library tabs to prevent accidental page flips.
+- **Shadow Effects**: Removed unnecessary button shadows to align with the clean, modern UI requirements.

@@ -8,6 +8,8 @@ import 'package:hires_streamer/providers/playback_provider.dart';
 import 'package:hires_streamer/screens/queue_tab.dart'; // To use UnifiedLibraryItem
 import 'package:hires_streamer/providers/local_library_provider.dart';
 import 'package:hires_streamer/providers/download_queue_provider.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 
 class _FolderEntry {
   final String name;
@@ -42,13 +44,11 @@ class UnifiedFolderScreen extends ConsumerStatefulWidget {
 
 class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _showTitleInAppBar = false;
   late List<_FolderEntry> _entries;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   void _calculateEntries(List<UnifiedLibraryItem> tracks) {
@@ -116,24 +116,10 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    final expandedHeight = _calculateExpandedHeight(context);
-    final shouldShow =
-        _scrollController.offset > (expandedHeight - kToolbarHeight - 20);
-    if (shouldShow != _showTitleInAppBar) {
-      if (mounted) setState(() => _showTitleInAppBar = shouldShow);
-    }
-  }
-
-  double _calculateExpandedHeight(BuildContext context) {
-    final mediaSize = MediaQuery.of(context).size;
-    return (mediaSize.height * 0.4).clamp(300.0, 400.0);
-  }
 
   Track _toTrack(UnifiedLibraryItem item) {
     // If it's a local item, we can get more metadata from localItem if present
@@ -176,7 +162,6 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final expandedHeight = _calculateExpandedHeight(context);
 
     // Watch global state dynamically
     final localLibraryItems = ref.watch(
@@ -220,267 +205,240 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
 
     _calculateEntries(currentTracks);
 
+    final updateState = ref.watch(updateProvider);
+    final isDownloadingUpdate =
+        updateState.isDownloading && updateState.updateInfo != null;
+    final topPadding = normalizedHeaderTopPadding(context);
+    final headerTopMargin = isDownloadingUpdate
+        ? 0.0
+        : MediaQuery.paddingOf(context).top + topPadding + 64.0;
+
     return Scaffold(
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverAppBar(
-            expandedHeight: expandedHeight,
-            pinned: true,
-            stretch: true,
-            backgroundColor: colorScheme.surface,
-            surfaceTintColor: Colors.transparent,
-            title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _showTitleInAppBar ? 1.0 : 0.0,
-              child: Text(
-                widget.folderName,
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+      body: Column(
+        children: [
+          // Stationary Header matching Home Page style
+          Container(
+            color: colorScheme.surface,
+            padding: EdgeInsets.only(
+              top: headerTopMargin,
+              bottom: 16,
+              left: 12,
+              right: 24,
             ),
-            actions: [],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.pin,
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Center(
-                      child: Icon(
-                        Icons.folder,
-                        size: 80,
-                        color: colorScheme.primary.withAlpha(128),
-                      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                  Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 24,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 150),
-                      opacity: _showTitleInAppBar ? 0.0 : 1.0,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            widget.folderName,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-
-                          Text(
-                            '${currentTracks.length} tracks',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              stretchModes: const [StretchMode.zoomBackground],
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: currentTracks.isEmpty
-                          ? null
-                          : () => _playAll(currentTracks, shuffle: false),
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Play'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    Expanded(
+                      child: Text(
+                        widget.folderName,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: currentTracks.isEmpty
-                          ? null
-                          : () => _playAll(currentTracks, shuffle: true),
-                      icon: const Icon(Icons.shuffle),
-                      label: const Text('Shuffle'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (currentTracks.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: Text('No tracks found in this folder')),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.only(top: 8, bottom: 32),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final entry = _entries[index];
-                  if (entry.isFolder) {
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 4,
-                      ),
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.folder,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        entry.name,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      subtitle: Text(
-                        '${entry.descendantTracks.length} tracks',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => UnifiedFolderScreen(
-                              folderName: entry.name,
-                              folderPath: entry.path,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: currentTracks.isEmpty
+                              ? null
+                              : () => _playAll(currentTracks, shuffle: false),
+                          icon: const Icon(Icons.play_arrow, size: 20),
+                          label: const Text('Play'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                        );
-                      },
-                    );
-                  }
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: currentTracks.isEmpty
+                              ? null
+                              : () => _playAll(currentTracks, shuffle: true),
+                          icon: const Icon(Icons.shuffle, size: 20),
+                          label: const Text('Shuffle'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                if (currentTracks.isEmpty)
+                  const SliverFillRemaining(
+                    child: Center(child: Text('No tracks found in this folder')),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 32),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final entry = _entries[index];
+                        if (entry.isFolder) {
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 4,
+                            ),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.folder,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              entry.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            subtitle: Text(
+                              '${entry.descendantTracks.length} tracks',
+                              style: TextStyle(color: colorScheme.onSurfaceVariant),
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => UnifiedFolderScreen(
+                                    folderName: entry.name,
+                                    folderPath: entry.path,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }
 
-                  final track = entry.track!;
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 4,
-                    ),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        color: colorScheme.surfaceContainerHighest,
-                        child:
-                            track.localCoverPath != null &&
-                                track.localCoverPath!.isNotEmpty
-                            ? Image.file(
-                                File(track.localCoverPath!),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Center(
+                        final track = entry.track!;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 4,
+                          ),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              color: colorScheme.surfaceContainerHighest,
+                              child:
+                                  track.localCoverPath != null &&
+                                      track.localCoverPath!.isNotEmpty
+                                  ? Image.file(
+                                      File(track.localCoverPath!),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Center(
+                                            child: Icon(
+                                              Icons.music_note,
+                                              color: colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                    )
+                                  : (track.coverUrl != null &&
+                                        track.coverUrl!.isNotEmpty)
+                                  ? CachedNetworkImage(
+                                      imageUrl: track.coverUrl!,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) => Center(
+                                        child: Icon(
+                                          Icons.music_note,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
                                       child: Icon(
                                         Icons.music_note,
                                         color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
-                              )
-                            : (track.coverUrl != null &&
-                                  track.coverUrl!.isNotEmpty)
-                            ? CachedNetworkImage(
-                                imageUrl: track.coverUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Center(
-                                  child: Icon(
-                                    Icons.music_note,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.music_note,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                            ),
+                          ),
+                          title: Text(
+                            track.trackName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            track.artistName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: colorScheme.onSurfaceVariant),
+                          ),
+                          onTap: () {
+                            // Sort all tracks in this folder alphabetically
+                            final allTracks = currentTracks.map(_toTrack).toList();
+                            allTracks.sort(
+                              (a, b) => a.name.toLowerCase().compareTo(
+                                b.name.toLowerCase(),
                               ),
-                      ),
-                    ),
-                    title: Text(
-                      track.trackName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: Text(
-                      track.artistName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                    onTap: () {
-                      // Sort all tracks in this folder alphabetically
-                      final allTracks = currentTracks.map(_toTrack).toList();
-                      allTracks.sort(
-                        (a, b) => a.name.toLowerCase().compareTo(
-                          b.name.toLowerCase(),
-                        ),
-                      );
+                            );
 
-                      // Find index of clicked track
-                      final startIndex = allTracks.indexWhere(
-                        (t) => t.id == track.id,
-                      );
+                            // Find index of clicked track
+                            final startIndex = allTracks.indexWhere(
+                              (t) => t.id == track.id,
+                            );
 
-                      ref
-                          .read(playbackProvider.notifier)
-                          .playTrackList(
-                            allTracks,
-                            startIndex: startIndex >= 0 ? startIndex : 0,
-                          );
-                    },
-                  );
-                }, childCount: _entries.length),
-              ),
+                            ref
+                                .read(playbackProvider.notifier)
+                                .playTrackList(
+                                  allTracks,
+                                  startIndex: startIndex >= 0 ? startIndex : 0,
+                                );
+                          },
+                        );
+                      }, childCount: _entries.length),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );

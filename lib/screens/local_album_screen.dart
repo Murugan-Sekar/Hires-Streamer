@@ -13,6 +13,8 @@ import 'package:hires_streamer/services/platform_bridge.dart';
 import 'package:hires_streamer/providers/local_library_provider.dart';
 import 'package:hires_streamer/providers/playback_provider.dart';
 import 'package:hires_streamer/models/track.dart';
+import 'package:hires_streamer/utils/app_bar_layout.dart';
+import 'package:hires_streamer/providers/update_provider.dart';
 
 /// Screen to display tracks from a local library album
 class LocalAlbumScreen extends ConsumerStatefulWidget {
@@ -36,7 +38,6 @@ class LocalAlbumScreen extends ConsumerStatefulWidget {
 class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
-  bool _showTitleInAppBar = false;
   final ScrollController _scrollController = ScrollController();
   late List<LocalLibraryItem> _sortedTracksCache;
   late Map<int, List<LocalLibraryItem>> _discGroupsCache;
@@ -68,12 +69,7 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
   }
 
   void _onScroll() {
-    final expandedHeight = _calculateExpandedHeight(context);
-    final shouldShow =
-        _scrollController.offset > (expandedHeight - kToolbarHeight - 20);
-    if (shouldShow != _showTitleInAppBar) {
-      setState(() => _showTitleInAppBar = shouldShow);
-    }
+    // Scroll listener for other potential uses
   }
 
   double _calculateExpandedHeight(BuildContext context) {
@@ -279,6 +275,14 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
       });
     }
 
+    final updateState = ref.watch(updateProvider);
+    final isDownloadingUpdate =
+        updateState.isDownloading && updateState.updateInfo != null;
+    final topPadding = normalizedHeaderTopPadding(context);
+    final headerTopMargin = isDownloadingUpdate
+        ? 0.0
+        : MediaQuery.paddingOf(context).top + topPadding + 64.0;
+
     return PopScope(
       canPop: !_isSelectionMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -289,14 +293,93 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
       child: Scaffold(
         body: Stack(
           children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                _buildAppBar(context, colorScheme),
-                _buildInfoCard(context, colorScheme, tracks),
-                _buildTrackList(context, colorScheme, tracks),
-                SliverToBoxAdapter(
-                  child: SizedBox(height: _isSelectionMode ? 120 : 32),
+            Column(
+              children: [
+                // Stationary Header matching Home Page style
+                Container(
+                  color: colorScheme.surface,
+                  padding: EdgeInsets.only(
+                    top: headerTopMargin,
+                    bottom: 16,
+                    left: 12,
+                    right: 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          Expanded(
+                            child: Text(
+                              widget.albumName,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () => _playAll(tracks),
+                                icon: const Icon(Icons.play_arrow, size: 20),
+                                label: const Text('Play'),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _playAll(tracks, shuffle: true),
+                                icon: const Icon(Icons.shuffle, size: 20),
+                                label: const Text('Shuffle'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      _buildCoverSection(context, colorScheme),
+                      _buildTrackList(context, colorScheme, tracks),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: _isSelectionMode ? 120 : 32),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -320,262 +403,121 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
     );
   }
 
-  Widget _buildAppBar(BuildContext context, ColorScheme colorScheme) {
-    final expandedHeight = _calculateExpandedHeight(context);
+  Widget _buildCoverSection(BuildContext context, ColorScheme colorScheme) {
     final commonQuality = _commonQualityCache;
+    final expandedHeight = _calculateExpandedHeight(context);
 
-    return SliverAppBar(
-      expandedHeight: expandedHeight,
-      pinned: true,
-      stretch: true,
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      title: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _showTitleInAppBar ? 1.0 : 0.0,
-        child: Text(
-          widget.albumName,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final collapseRatio =
-              (constraints.maxHeight - kToolbarHeight) /
-              (expandedHeight - kToolbarHeight);
-          final showContent = collapseRatio > 0.3;
-
-          return FlexibleSpaceBar(
-            collapseMode: CollapseMode.pin,
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Full-screen cover background
-                if (widget.coverPath != null)
-                  Image.file(
-                    File(widget.coverPath!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Container(color: colorScheme.surface),
-                  )
-                else
-                  Container(
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.album,
-                      size: 80,
-                      color: colorScheme.onSurfaceVariant,
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          Container(
+            height: expandedHeight * 0.7,
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (widget.coverPath != null)
+                    Image.file(File(widget.coverPath!), fit: BoxFit.cover)
+                  else
+                    Container(
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.album,
+                        size: 80,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                // Bottom gradient for readability
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: expandedHeight * 0.65,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.85),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.artistName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildMetadataBadge('Local', Icons.folder),
+                              _buildMetadataBadge(
+                                '${_sortedTracksCache.length} tracks',
+                                Icons.music_note,
+                              ),
+                              if (commonQuality != null)
+                                _buildMetadataBadge(
+                                  commonQuality,
+                                  Icons.high_quality,
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
-                // Album info overlay at bottom
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 40,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: showContent ? 1.0 : 0.0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.albumName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          widget.artistName,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.folder,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    'Local',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.music_note,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_sortedTracksCache.length} tracks',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (commonQuality != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  commonQuality,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            stretchModes: const [StretchMode.zoomBackground],
-          );
-        },
-      ),
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
-            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.pop(context),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoCard(
-    BuildContext context,
-    ColorScheme colorScheme,
-    List<LocalLibraryItem> tracks,
-  ) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => _playAll(tracks, shuffle: false),
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Play'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+  Widget _buildMetadataBadge(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _playAll(tracks, shuffle: true),
-                icon: const Icon(Icons.shuffle),
-                label: const Text('Shuffle'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1697,3 +1639,4 @@ class _LocalAlbumSelectionActionButton extends StatelessWidget {
     );
   }
 }
+
