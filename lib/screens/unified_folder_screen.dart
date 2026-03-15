@@ -136,6 +136,11 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
       releaseDate: local?.releaseDate,
       coverUrl: item.localCoverPath ?? item.coverUrl,
       source: 'local',
+      maxBitDepth: local?.bitDepth,
+      maxSampleRate: local?.sampleRate?.toDouble(),
+      format: local?.format,
+      bitrate: local?.bitrate,
+      fileSize: local?.fileSize,
     );
   }
 
@@ -432,6 +437,42 @@ class _UnifiedFolderScreenState extends ConsumerState<UnifiedFolderScreen> {
                                   startIndex: startIndex >= 0 ? startIndex : 0,
                                 );
                           },
+                          trailing: Container(
+                            width: 32,
+                            height: 32,
+                            margin: const EdgeInsets.only(left: 8),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                final allTracks =
+                                    currentTracks.map(_toTrack).toList();
+                                allTracks.sort(
+                                  (a, b) => a.name.toLowerCase().compareTo(
+                                    b.name.toLowerCase(),
+                                  ),
+                                );
+
+                                final startIndex = allTracks.indexWhere(
+                                  (t) => t.id == track.id,
+                                );
+
+                                ref.read(playbackProvider.notifier).playTrackList(
+                                  allTracks,
+                                  startIndex: startIndex >= 0 ? startIndex : 0,
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ),
                         );
                       }, childCount: _entries.length),
                     ),

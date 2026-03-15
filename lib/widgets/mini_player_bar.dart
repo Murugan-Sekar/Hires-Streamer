@@ -1316,9 +1316,6 @@ class _AudioQualityFooter extends ConsumerWidget {
     final sampleRateKhz = displayItem.sampleRate > 0
         ? '${(displayItem.sampleRate / 1000).toStringAsFixed(displayItem.sampleRate % 1000 == 0 ? 0 : 1)} kHz'
         : '';
-    final bitDepthStr = displayItem.bitDepth > 0
-        ? '${displayItem.bitDepth} bit'
-        : '';
     final bitrateStr = displayItem.bitrate > 0
         ? '${displayItem.bitrate} kbps'
         : '';
@@ -1339,7 +1336,7 @@ class _AudioQualityFooter extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (isLossless)
+                  if (format.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -1347,51 +1344,60 @@ class _AudioQualityFooter extends ConsumerWidget {
                       ),
                       margin: const EdgeInsets.only(right: 10),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.12),
+                        color: isLossless
+                            ? colorScheme.primary.withValues(alpha: 0.12)
+                            : colorScheme.surfaceContainerHighest.withValues(
+                                alpha: 0.5,
+                              ),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: 0.2),
+                          color: isLossless
+                              ? colorScheme.primary.withValues(alpha: 0.2)
+                              : colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.1,
+                                ),
                           width: 1,
                         ),
                       ),
                       child: Text(
-                        'LOSSLESS',
+                        isLossless ? 'LOSSLESS' : 'MP3',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                          fontSize: 8,
-                        ),
+                              color: isLossless
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                              fontSize: 8,
+                            ),
                       ),
                     ),
-                  Flexible(
-                    child: Text(
-                      [
-                        item.format.toUpperCase(),
-                        bitDepthStr,
-                        sampleRateKhz,
-                        bitrateStr,
-                        fileSizeStr,
-                      ].where((s) => s.isNotEmpty).join('  •  '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.8,
-                        ),
-                        letterSpacing: 0.2,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                   Flexible(
+                     child: Text(
+                       [
+                         displayItem.format.toUpperCase(),
+                         bitrateStr,
+                         sampleRateKhz,
+                         fileSizeStr,
+                       ].where((s) => s.isNotEmpty).join('  •  '),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                       textAlign: TextAlign.center,
+                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                         color: colorScheme.onSurfaceVariant.withValues(
+                           alpha: 0.8,
+                         ),
+                         letterSpacing: 0.2,
+                         fontWeight: FontWeight.w500,
+                       ),
+                     ),
+                   ),
                 ],
               ),
             ),
 
           if (showMetadata) const SizedBox(height: 12),
           Text(
-            'PLAYBACK SOURCE: ${item.service}'.toUpperCase(),
+            'PLAYBACK SOURCE: ${displayItem.service}'.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
               fontSize: 7,

@@ -24,6 +24,9 @@ class Track {
   final String? itemType;
   final int? maxBitDepth;
   final double? maxSampleRate;
+  final String? format;
+  final int? bitrate;
+  final int? fileSize;
 
   const Track({
     required this.id,
@@ -46,6 +49,9 @@ class Track {
     this.itemType,
     this.maxBitDepth,
     this.maxSampleRate,
+    this.format,
+    this.bitrate,
+    this.fileSize,
   });
 
   bool get isSingle => albumType == 'single' || albumType == 'ep';

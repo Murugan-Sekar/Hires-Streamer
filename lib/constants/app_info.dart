@@ -2,7 +2,7 @@
 /// Update version here only - all other files will reference this
 class AppInfo {
   static const String version = '1.0.5';
-  static const String buildNumber = '7';
+  static const String buildNumber = '8';
   static const String fullVersion = '$version+$buildNumber';
 
   static const String appName = 'Hi-Res Streamer';

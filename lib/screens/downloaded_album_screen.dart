@@ -275,6 +275,7 @@ class _DownloadedAlbumScreenState extends ConsumerState<DownloadedAlbumScreen> {
             artist: track.artistName,
             album: track.albumName,
             coverUrl: track.coverUrl ?? '',
+            track: _toTrack(track),
           );
     } catch (e) {
       if (mounted) {
@@ -360,7 +361,11 @@ class _DownloadedAlbumScreenState extends ConsumerState<DownloadedAlbumScreen> {
       discNumber: item.discNumber,
       releaseDate: item.releaseDate,
       coverUrl: item.coverUrl,
-      source: 'local',
+      source: item.service.isEmpty ? 'local' : item.service,
+      maxBitDepth: item.bitDepth ?? item.maxBitDepth,
+      maxSampleRate: (item.sampleRate ?? item.maxSampleRate)?.toDouble(),
+      bitrate: item.bitrate,
+      fileSize: item.fileSize,
     );
   }
 
@@ -512,19 +517,20 @@ class _DownloadedAlbumScreenState extends ConsumerState<DownloadedAlbumScreen> {
               ],
             ),
 
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              bottom: _isSelectionMode ? 0 : -(200 + bottomPadding),
-              child: _buildSelectionBottomBar(
-                context,
-                colorScheme,
-                tracks,
-                bottomPadding,
+            if (_isSelectionMode)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildSelectionBottomBar(
+                  context,
+                  colorScheme,
+                  tracks,
+                  bottomPadding,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -881,13 +887,23 @@ class _DownloadedAlbumScreenState extends ConsumerState<DownloadedAlbumScreen> {
           ),
           trailing: _isSelectionMode
               ? null
-              : IconButton(
-                  onPressed: () => _openFile(track),
-                  icon: Icon(Icons.play_arrow, color: colorScheme.primary),
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.primaryContainer.withValues(
-                      alpha: 0.3,
+              : Container(
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    onPressed: () => _openFile(track),
+                    icon: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 18,
                     ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ),
         ),

@@ -490,57 +490,65 @@ class PlaybackController extends Notifier<PlaybackState> {
             state.currentIndex < state.queue.length) {
           final durationMs = duration.inMilliseconds;
           final currentItem = state.currentItem;
-          final updatedCurrentItem =
-              currentItem != null && currentItem.durationMs != durationMs
-              ? PlaybackItem(
-                  id: currentItem.id,
-                  title: currentItem.title,
-                  artist: currentItem.artist,
-                  album: currentItem.album,
-                  coverUrl: currentItem.coverUrl,
-                  sourceUri: currentItem.sourceUri,
-                  isLocal: currentItem.isLocal,
-                  service: currentItem.service,
-                  durationMs: durationMs,
-                  fileSize: currentItem.fileSize,
-                  format: currentItem.format,
-                  bitDepth: currentItem.bitDepth,
-                  sampleRate: currentItem.sampleRate,
-                  bitrate: currentItem.bitrate,
-                  track: currentItem.track,
-                )
-              : currentItem;
 
-          final queueItem = state.queue[state.currentIndex];
-          final shouldUpdateQueueItem = queueItem.durationMs != durationMs;
+          if (currentItem != null) {
+            // Aggressively recover metadata if it was missing or duration changed
+            final shouldReInfer =
+                currentItem.durationMs != durationMs ||
+                currentItem.bitrate <= 0 ||
+                currentItem.fileSize <= 0;
 
-          if (updatedCurrentItem != currentItem || shouldUpdateQueueItem) {
-            final updatedQueue = [...state.queue];
-            if (shouldUpdateQueueItem) {
-              updatedQueue[state.currentIndex] = PlaybackItem(
-                id: queueItem.id,
-                title: queueItem.title,
-                artist: queueItem.artist,
-                album: queueItem.album,
-                coverUrl: queueItem.coverUrl,
-                sourceUri: queueItem.sourceUri,
-                isLocal: queueItem.isLocal,
-                service: queueItem.service,
-                durationMs: durationMs,
-                fileSize: queueItem.fileSize,
-                format: queueItem.format,
-                bitDepth: queueItem.bitDepth,
-                sampleRate: queueItem.sampleRate,
-                bitrate: queueItem.bitrate,
-                track: queueItem.track,
+            if (shouldReInfer) {
+              _log.d(
+                'Re-inferring metadata for ${currentItem.title} (Duration: $durationMs)',
               );
-            }
 
-            state = state.copyWith(
-              currentItem: updatedCurrentItem,
-              queue: updatedQueue,
-            );
-            unawaited(_savePlaybackSnapshot());
+              Future<void> recoverMetadata() async {
+                int resolvedFileSize = currentItem.fileSize;
+                if (resolvedFileSize <= 0) {
+                  try {
+                    final stat = await fileStat(currentItem.sourceUri);
+                    if (stat != null && stat.size != null) {
+                      resolvedFileSize = stat.size!;
+                      _log.d(
+                        'Recovered fileSize: $resolvedFileSize for ${currentItem.title}',
+                      );
+                    }
+                  } catch (_) {}
+                }
+
+                final updatedCurrentItem = currentItem.copyWith(
+                  durationMs: durationMs,
+                  fileSize: resolvedFileSize,
+                  bitrate: _inferBitrate(
+                    bitrate: currentItem.bitrate,
+                    fileSize: resolvedFileSize,
+                    durationMs: durationMs,
+                  ),
+                );
+
+                final queueItem = state.queue[state.currentIndex];
+                final updatedQueue = [...state.queue];
+                updatedQueue[state.currentIndex] = queueItem.copyWith(
+                  durationMs: durationMs,
+                  fileSize: resolvedFileSize,
+                  bitrate: _inferBitrate(
+                    bitrate: queueItem.bitrate,
+                    fileSize: resolvedFileSize,
+                    durationMs: durationMs,
+                  ),
+                );
+
+                state = state.copyWith(
+                  currentItem: updatedCurrentItem,
+                  queue: updatedQueue,
+                );
+                unawaited(_savePlaybackSnapshot());
+                _updateMediaItemNotification(updatedCurrentItem);
+              }
+
+              unawaited(recoverMetadata());
+            }
           }
         }
 
@@ -1208,27 +1216,46 @@ class PlaybackController extends Notifier<PlaybackState> {
 
   PlaybackItem _buildQueueItemFromTrack(Track track) {
     final localState = ref.read(localLibraryProvider);
-    final isLocalSource = (track.source ?? '').toLowerCase() == 'local';
+    final historyState = ref.read(downloadHistoryProvider);
 
     LocalLibraryItem? localItem;
-    if (isLocalSource) {
-      for (final item in localState.items) {
+    DownloadHistoryItem? historyItem;
+
+    // 1. Precise match by ID
+    for (final item in localState.items) {
+      if (item.id == track.id) {
+        localItem = item;
+        break;
+      }
+    }
+    if (localItem == null) {
+      for (final item in historyState.items) {
         if (item.id == track.id) {
-          localItem = item;
+          historyItem = item;
           break;
         }
       }
     }
 
-    if (localItem == null) {
+    // 2. Match by ISRC if ID failed
+    if (localItem == null && historyItem == null) {
       final isrc = track.isrc?.trim();
       if (isrc != null && isrc.isNotEmpty) {
         localItem = localState.getByIsrc(isrc);
+        historyItem = historyState.getByIsrc(isrc);
       }
     }
 
-    localItem ??= localState.findByTrackAndArtist(track.name, track.artistName);
+    // 3. Match by Name and Artist as final fallback
+    if (localItem == null && historyItem == null) {
+      localItem = localState.findByTrackAndArtist(track.name, track.artistName);
+      historyItem = historyState.findByTrackAndArtist(
+        track.name,
+        track.artistName,
+      );
+    }
 
+    // --- Build from LocalLibraryItem if found ---
     if (localItem != null && localItem.filePath.isNotEmpty) {
       final localUri = _uriFromPath(localItem.filePath);
       final localDurationMs =
@@ -1245,38 +1272,22 @@ class PlaybackController extends Notifier<PlaybackState> {
         isLocal: true,
         service: 'offline',
         durationMs: localDurationMs,
-        format: localItem.format ?? '',
-        bitDepth: localItem.bitDepth ?? 0,
-        sampleRate: localItem.sampleRate ?? 0,
-        bitrate: localItem.bitrate ?? 0,
-        fileSize: localItem.fileSize ?? 0,
+        format: localItem.format ?? track.format ?? '',
+        bitDepth: localItem.bitDepth ?? track.maxBitDepth ?? 0,
+        sampleRate: (localItem.sampleRate != null && localItem.sampleRate! > 0)
+            ? localItem.sampleRate!
+            : (track.maxSampleRate?.toInt() ?? 0),
+        bitrate: _inferBitrate(
+          bitrate: localItem.bitrate ?? track.bitrate,
+          fileSize: localItem.fileSize ?? track.fileSize,
+          durationMs: localDurationMs,
+        ),
+        fileSize: localItem.fileSize ?? track.fileSize ?? 0,
         track: track,
       );
     }
 
-    final historyState = ref.read(downloadHistoryProvider);
-    DownloadHistoryItem? historyItem;
-    if (isLocalSource) {
-      for (final item in historyState.items) {
-        if (item.id == track.id) {
-          historyItem = item;
-          break;
-        }
-      }
-    }
-
-    if (historyItem == null) {
-      final isrc = track.isrc?.trim();
-      if (isrc != null && isrc.isNotEmpty) {
-        historyItem = historyState.getByIsrc(isrc);
-      }
-    }
-
-    historyItem ??= historyState.findByTrackAndArtist(
-      track.name,
-      track.artistName,
-    );
-
+    // --- Build from DownloadHistoryItem if found ---
     if (historyItem != null && historyItem.filePath.isNotEmpty) {
       final localUri = _uriFromPath(historyItem.filePath);
       final localDurationMs =
@@ -1293,15 +1304,20 @@ class PlaybackController extends Notifier<PlaybackState> {
         isLocal: true,
         service: 'offline',
         durationMs: localDurationMs,
-        format: historyItem.quality?.split(' ').first ?? '',
-        bitDepth: historyItem.bitDepth ?? 0,
-        sampleRate: historyItem.sampleRate ?? 0,
-        bitrate: 0, // bitrate is usually not stored separately for lossless
-        fileSize: historyItem.fileSize,
+        format: historyItem.quality?.split(' ').first ?? track.format ?? '',
+        bitDepth: historyItem.bitDepth ?? track.maxBitDepth ?? 0,
+        sampleRate: historyItem.sampleRate ?? track.maxSampleRate?.toInt() ?? 0,
+        bitrate: _inferBitrate(
+          bitrate: historyItem.bitrate ?? track.bitrate,
+          fileSize: historyItem.fileSize ?? track.fileSize,
+          durationMs: localDurationMs,
+        ),
+        fileSize: historyItem.fileSize ?? track.fileSize ?? 0,
         track: track,
       );
     }
 
+    // --- Fallback (Streaming or sparse track metadata) ---
     return PlaybackItem(
       id: track.id,
       title: track.name,
@@ -1309,7 +1325,17 @@ class PlaybackController extends Notifier<PlaybackState> {
       album: track.albumName,
       coverUrl: track.coverUrl ?? '',
       sourceUri: '',
+      service: track.source ?? '',
       durationMs: _trackDurationMs(track),
+      format: track.format ?? '',
+      bitDepth: track.maxBitDepth ?? 0,
+      sampleRate: track.maxSampleRate?.toInt() ?? 0,
+      bitrate: _inferBitrate(
+        bitrate: track.bitrate,
+        fileSize: track.fileSize,
+        durationMs: _trackDurationMs(track),
+      ),
+      fileSize: track.fileSize ?? 0,
       track: track,
       maxBitDepth: track.maxBitDepth,
       maxSampleRate: track.maxSampleRate,
@@ -1319,6 +1345,17 @@ class PlaybackController extends Notifier<PlaybackState> {
   int _trackDurationMs(Track track) {
     if (track.duration <= 0) return 0;
     return track.duration * 1000;
+  }
+
+  int _inferBitrate({int? bitrate, int? fileSize, int? durationMs}) {
+    if (bitrate != null && bitrate > 0) return bitrate;
+    if (fileSize == null ||
+        fileSize <= 0 ||
+        durationMs == null ||
+        durationMs <= 0) {
+      return 0;
+    }
+    return (fileSize * 8 / durationMs).round();
   }
 
   Duration _fallbackDurationForItem(PlaybackItem? item) {
@@ -1334,6 +1371,7 @@ class PlaybackController extends Notifier<PlaybackState> {
     required String artist,
     String album = '',
     String coverUrl = '',
+    Track? track,
   }) async {
     final requestEpoch = _startNewPlayRequest();
     _resetPrefetchCycleState();
@@ -1341,24 +1379,30 @@ class PlaybackController extends Notifier<PlaybackState> {
     _pendingResumePosition = null;
     _pendingResumeIndex = null;
     final uri = _uriFromPath(path);
-    final item = PlaybackItem(
-      id: path,
-      title: title,
-      artist: artist,
-      album: album,
-      coverUrl: coverUrl,
-      sourceUri: uri.toString(),
-      isLocal: true,
-      service: 'offline',
+    // Use _buildQueueItemFromTrack logic to enrich metadata even when playing a single file path
+    final item = _buildQueueItemFromTrack(
+      track ??
+          Track(
+            id: path,
+            name: title,
+            artistName: artist,
+            albumName: album,
+            coverUrl: coverUrl,
+            source: 'local',
+            duration: 0,
+          ),
     );
 
-    _clearLyricsForTrackChange(upcomingItem: item);
+    // Ensure the path is correct if we did a lookup
+    final enrichedItem = item.copyWith(sourceUri: uri.toString());
+
+    _clearLyricsForTrackChange(upcomingItem: enrichedItem);
 
     // Replacing single-track playback should also replace queue to avoid stale UI.
     state = state.copyWith(
       seekSupported: true,
       clearError: true,
-      queue: [item],
+      queue: [enrichedItem],
       currentIndex: 0,
     );
     unawaited(_savePlaybackSnapshot());
@@ -1372,7 +1416,11 @@ class PlaybackController extends Notifier<PlaybackState> {
       _shufflePosition = -1;
     }
 
-    await _setSourceAndPlay(uri, item, expectedRequestEpoch: requestEpoch);
+    await _setSourceAndPlay(
+      uri,
+      enrichedItem,
+      expectedRequestEpoch: requestEpoch,
+    );
   }
 
   // ─── Public: play a list of tracks (set queue) ───────────────────────────
@@ -1759,7 +1807,13 @@ class PlaybackController extends Notifier<PlaybackState> {
             int parseSafeInt(dynamic val) {
               if (val == null) return 0;
               if (val is int) return val;
-              if (val is String) return int.tryParse(val) ?? 0;
+              if (val is String) {
+                final i = int.tryParse(val);
+                if (i != null) return i;
+                final d = double.tryParse(val);
+                if (d != null) return d.toInt();
+                return 0;
+              }
               if (val is double) return val.toInt();
               return 0;
             }
@@ -1772,14 +1826,34 @@ class PlaybackController extends Notifier<PlaybackState> {
               return 0.0;
             }
 
+            int resolvedDurationMs = parseSafeInt(
+              response['duration_ms'] ??
+                  response['actual_duration_ms'] ??
+                  (parseSafeInt(
+                        response['duration'] ?? response['actual_duration'],
+                      ) *
+                      1000),
+            );
+            if (resolvedDurationMs <= 0) {
+              resolvedDurationMs = item.durationMs;
+            }
+
             item = item.copyWith(
               sourceUri: filePath,
               format: response['format'] ?? 'flac',
-              bitrate: parseSafeInt(
-                response['bitrate'] ??
-                    response['bit_rate'] ??
-                    response['actual_bitrate'] ??
-                    0,
+              durationMs: resolvedDurationMs,
+              bitrate: _inferBitrate(
+                bitrate: parseSafeInt(
+                  response['bitrate'] ??
+                      response['bit_rate'] ??
+                      response['actual_bitrate'] ??
+                      response['actual_bit_rate'] ??
+                      response['bitrate_kbps'] ??
+                      response['kbps'] ??
+                      0,
+                ),
+                fileSize: resolvedFileSize,
+                durationMs: resolvedDurationMs,
               ),
               sampleRate: parseSafeInt(
                 response['sample_rate'] ??
@@ -3990,7 +4064,14 @@ class PlaybackController extends Notifier<PlaybackState> {
         int parseSafeInt(dynamic val) {
           if (val == null) return 0;
           if (val is int) return val;
-          if (val is String) return int.tryParse(val) ?? 0;
+          if (val is String) {
+            final i = int.tryParse(val);
+            if (i != null) return i;
+            final d = double.tryParse(val);
+            if (d != null) return d.toInt();
+            return 0;
+          }
+          if (val is double) return val.toInt();
           return 0;
         }
 
@@ -4004,11 +4085,34 @@ class PlaybackController extends Notifier<PlaybackState> {
           } catch (_) {}
         }
 
+        int resolvedDurationMs = parseSafeInt(
+          response['duration_ms'] ??
+              response['actual_duration_ms'] ??
+              (parseSafeInt(
+                    response['duration'] ?? response['actual_duration'],
+                  ) *
+                  1000),
+        );
+        if (resolvedDurationMs <= 0) {
+          resolvedDurationMs = item.durationMs;
+        }
+
         item = item.copyWith(
           sourceUri: filePath,
           format: response['format'] ?? 'flac',
-          bitrate: parseSafeInt(
-            response['bitrate'] ?? response['bit_rate'] ?? 0,
+          durationMs: resolvedDurationMs,
+          bitrate: _inferBitrate(
+            bitrate: parseSafeInt(
+              response['bitrate'] ??
+                  response['bit_rate'] ??
+                  response['actual_bitrate'] ??
+                  response['actual_bit_rate'] ??
+                  response['bitrate_kbps'] ??
+                  response['kbps'] ??
+                  0,
+            ),
+            fileSize: resolvedFileSize,
+            durationMs: resolvedDurationMs,
           ),
           sampleRate: parseSafeInt(
             response['sample_rate'] ?? response['actual_sample_rate'] ?? 0,

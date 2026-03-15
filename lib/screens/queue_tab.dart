@@ -157,14 +157,16 @@ class UnifiedLibraryItem {
         trackNumber: h.trackNumber,
         discNumber: h.discNumber,
         releaseDate: h.releaseDate,
-        source: h.service,
+        source: h.service.isEmpty ? 'local' : h.service,
+        maxBitDepth: h.bitDepth ?? h.maxBitDepth,
+        maxSampleRate: (h.sampleRate ?? h.maxSampleRate)?.toDouble(),
+        format: h.quality?.split(' ').first,
+        bitrate: h.bitrate,
+        fileSize: h.fileSize,
       );
     }
     if (localItem != null) {
       final l = localItem!;
-      // Store coverPath (even local file paths) in coverUrl so playlist
-      // entries retain the cover.  All renderers must check whether the
-      // value is a URL or a local path and use the appropriate widget.
       return Track(
         id: l.id,
         name: l.trackName,
@@ -178,6 +180,11 @@ class UnifiedLibraryItem {
         discNumber: l.discNumber,
         releaseDate: l.releaseDate,
         source: 'local',
+        maxBitDepth: l.bitDepth,
+        maxSampleRate: l.sampleRate?.toDouble(),
+        format: l.format,
+        bitrate: l.bitrate,
+        fileSize: l.fileSize,
       );
     }
     // Fallback — should not happen
@@ -1931,18 +1938,18 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     String artist = '',
     String album = '',
     String coverUrl = '',
+    Track? track,
   }) async {
     final cleanPath = _cleanFilePath(filePath);
     try {
       final fallbackTitle = cleanPath.split('/').last.split('\\').last;
-      await ref
-          .read(playbackProvider.notifier)
-          .playLocalPath(
+      await ref.read(playbackProvider.notifier).playLocalPath(
             path: cleanPath,
-            title: title.isNotEmpty ? title : fallbackTitle,
-            artist: artist,
-            album: album,
-            coverUrl: coverUrl,
+            title: title.isNotEmpty ? title : (track?.name ?? fallbackTitle),
+            artist: artist.isNotEmpty ? artist : (track?.artistName ?? ''),
+            album: album.isNotEmpty ? album : (track?.albumName ?? ''),
+            coverUrl: coverUrl.isNotEmpty ? coverUrl : (track?.coverUrl ?? ''),
+            track: track,
           );
     } catch (e) {
       if (mounted) {
@@ -3645,34 +3652,64 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             ),
           ),
 
-        // Combined albums grid (downloaded + local in single grid)
+        // Combined albums (downloaded + local in single grid/list)
         if (filterMode == 'albums' &&
             (filteredGroupedAlbums.isNotEmpty ||
                 filteredGroupedLocalAlbums.isNotEmpty))
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.75,
+          if (historyViewMode == 'grid')
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 0.75,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    // First render downloaded albums, then local albums
+                    if (index < filteredGroupedAlbums.length) {
+                      final album = filteredGroupedAlbums[index];
+                      return KeyedSubtree(
+                        key: ValueKey(album.key),
+                        child: _buildAlbumGridItem(context, album, colorScheme),
+                      );
+                    } else {
+                      final localIndex = index - filteredGroupedAlbums.length;
+                      final album = filteredGroupedLocalAlbums[localIndex];
+                      return KeyedSubtree(
+                        key: ValueKey('local_${album.key}'),
+                        child: _buildLocalAlbumGridItem(
+                          context,
+                          album,
+                          colorScheme,
+                        ),
+                      );
+                    }
+                  },
+                  childCount:
+                      filteredGroupedAlbums.length +
+                      filteredGroupedLocalAlbums.length,
+                ),
               ),
+            )
+          else
+            SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  // First render downloaded albums, then local albums
                   if (index < filteredGroupedAlbums.length) {
                     final album = filteredGroupedAlbums[index];
                     return KeyedSubtree(
                       key: ValueKey(album.key),
-                      child: _buildAlbumGridItem(context, album, colorScheme),
+                      child: _buildAlbumListItem(context, album, colorScheme),
                     );
                   } else {
                     final localIndex = index - filteredGroupedAlbums.length;
                     final album = filteredGroupedLocalAlbums[localIndex];
                     return KeyedSubtree(
                       key: ValueKey('local_${album.key}'),
-                      child: _buildLocalAlbumGridItem(
+                      child: _buildLocalAlbumListItem(
                         context,
                         album,
                         colorScheme,
@@ -3685,24 +3722,39 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                     filteredGroupedLocalAlbums.length,
               ),
             ),
-          ),
 
-        // Folders grid
+        // Folders (grid/list)
         if (filterMode == 'folders' && filteredRootFolderEntries.isNotEmpty)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.75,
+          if (historyViewMode == 'grid')
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 0.75,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final entry = filterData.filteredRootFolderEntries[index];
+                  return KeyedSubtree(
+                    key: ValueKey('folder_entry_${entry.key}'),
+                    child: _buildFolderBrowserGridItem(
+                      context,
+                      entry,
+                      colorScheme,
+                    ),
+                  );
+                }, childCount: filterData.filteredRootFolderEntries.length),
               ),
+            )
+          else
+            SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final entry = filterData.filteredRootFolderEntries[index];
                 return KeyedSubtree(
                   key: ValueKey('folder_entry_${entry.key}'),
-                  child: _buildFolderBrowserGridItem(
+                  child: _buildFolderBrowserListItem(
                     context,
                     entry,
                     colorScheme,
@@ -3710,7 +3762,6 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                 );
               }, childCount: filterData.filteredRootFolderEntries.length),
             ),
-          ),
 
         // Unified list/grid for 'all' filter: collection items + tracks combined
         if (filterMode == 'all') ...[
@@ -4084,6 +4135,116 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     );
   }
 
+  /// Album list item for downloaded albums
+  Widget _buildAlbumListItem(
+    BuildContext context,
+    _GroupedAlbum album,
+    ColorScheme colorScheme,
+  ) {
+    final embeddedCoverPath = _resolveDownloadedEmbeddedCoverPath(
+      album.sampleFilePath,
+    );
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        onTap: () => _navigateToDownloadedAlbum(album),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: embeddedCoverPath != null
+                      ? Image.file(
+                          File(embeddedCoverPath),
+                          fit: BoxFit.cover,
+                          cacheWidth: 150,
+                          cacheHeight: 150,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(Icons.album, color: colorScheme.onSurfaceVariant),
+                          ),
+                        )
+                      : album.coverUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: album.coverUrl!,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 150,
+                              memCacheHeight: 150,
+                              cacheManager: CoverCacheManager.instance,
+                            )
+                          : Container(
+                              color: colorScheme.surfaceContainerHighest,
+                              child: Icon(Icons.album, color: colorScheme.onSurfaceVariant),
+                            ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      album.albumName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    ClickableArtistName(
+                      artistName: album.artistName,
+                      coverUrl: album.coverUrl,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.music_note,
+                      size: 12,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${album.tracks.length}',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Album grid item for local library albums
   Widget _buildLocalAlbumGridItem(
     BuildContext context,
@@ -4190,6 +4351,103 @@ class _QueueTabState extends ConsumerState<QueueTab> {
     );
   }
 
+  /// Album list item for local library albums
+  Widget _buildLocalAlbumListItem(
+    BuildContext context,
+    _GroupedLocalAlbum album,
+    ColorScheme colorScheme,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        onTap: () => _navigateToLocalAlbum(album),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: album.coverPath != null
+                      ? Image.file(
+                          File(album.coverPath!),
+                          fit: BoxFit.cover,
+                          cacheWidth: 150,
+                          cacheHeight: 150,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(Icons.album, color: colorScheme.onSurfaceVariant),
+                          ),
+                        )
+                      : Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.album, color: colorScheme.onSurfaceVariant),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      album.albumName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      album.artistName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.folder,
+                      size: 12,
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${album.tracks.length}',
+                      style: TextStyle(
+                        color: colorScheme.onTertiaryContainer,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Hierarchical folder browser grid item
   Widget _buildFolderBrowserGridItem(
     BuildContext context,
@@ -4271,6 +4529,88 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Folder list item variant
+  Widget _buildFolderBrowserListItem(
+    BuildContext context,
+    _FolderBrowserEntry entry,
+    ColorScheme colorScheme,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        onTap: () => _navigateToFolderBrowser(entry),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.folder, color: colorScheme.onSurfaceVariant),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Folder',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.music_note,
+                      size: 12,
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${entry.allDescendantTracks.length}',
+                      style: TextStyle(
+                        color: colorScheme.onTertiaryContainer,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -5564,20 +5904,25 @@ class _QueueTabState extends ConsumerState<QueueTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (fileExists)
-                  IconButton(
-                    onPressed: () => _openFile(
-                      item.filePath!,
-                      title: item.track.name,
-                      artist: item.track.artistName,
-                      album: item.track.albumName,
-                      coverUrl: item.track.coverUrl ?? '',
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      shape: BoxShape.circle,
                     ),
-                    icon: Icon(Icons.play_arrow, color: colorScheme.primary),
-                    tooltip: 'Play',
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primaryContainer.withValues(
-                        alpha: 0.3,
+                    child: IconButton(
+                      onPressed: () => _openFile(
+                        item.filePath!,
+                        track: item.track,
                       ),
+                      icon: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   )
                 else
@@ -5879,10 +6224,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
             ? () => _navigateToLocalMetadataScreen(item.localItem!)
             : () => _openFile(
                 item.filePath,
-                title: item.trackName,
-                artist: item.artistName,
-                album: item.albumName,
-                coverUrl: item.coverUrl ?? item.localCoverPath ?? '',
+                track: item.toTrack(),
               ),
         onLongPress: _isSelectionMode
             ? null
@@ -6025,11 +6367,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                           IconButton(
                             onPressed: () => _openFile(
                               item.filePath,
-                              title: item.trackName,
-                              artist: item.artistName,
-                              album: item.albumName,
-                              coverUrl:
-                                  item.coverUrl ?? item.localCoverPath ?? '',
+                              track: item.toTrack(),
                             ),
                             icon: Icon(
                               Icons.play_arrow,
@@ -6077,10 +6415,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
           ? () => _navigateToLocalMetadataScreen(item.localItem!)
           : () => _openFile(
               item.filePath,
-              title: item.trackName,
-              artist: item.artistName,
-              album: item.albumName,
-              coverUrl: item.coverUrl ?? item.localCoverPath ?? '',
+              track: item.toTrack(),
             ),
       onLongPress: _isSelectionMode ? null : () => _enterSelectionMode(item.id),
       child: Stack(
@@ -6158,13 +6493,7 @@ class _QueueTabState extends ConsumerState<QueueTab> {
                               ? GestureDetector(
                                   onTap: () => _openFile(
                                     item.filePath,
-                                    title: item.trackName,
-                                    artist: item.artistName,
-                                    album: item.albumName,
-                                    coverUrl:
-                                        item.coverUrl ??
-                                        item.localCoverPath ??
-                                        '',
+                                    track: item.toTrack(),
                                   ),
                                   child: Container(
                                     padding: const EdgeInsets.all(6),

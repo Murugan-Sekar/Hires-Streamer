@@ -19,6 +19,7 @@ import 'package:hires_streamer/services/ffmpeg_service.dart';
 import 'package:hires_streamer/l10n/l10n.dart';
 import 'package:hires_streamer/utils/logger.dart';
 import 'package:hires_streamer/utils/string_utils.dart';
+import 'package:hires_streamer/models/track.dart';
 
 final _log = AppLogger('TrackMetadata');
 
@@ -3279,6 +3280,23 @@ class _TrackMetadataScreenState extends ConsumerState<TrackMetadataScreen> {
 
   Future<void> _openFile(BuildContext context, String filePath) async {
     try {
+      final track = Track(
+        id: _itemId,
+        name: trackName,
+        artistName: artistName,
+        albumName: albumName,
+        albumArtist: albumArtist,
+        coverUrl: _isLocalItem ? (_localCoverPath ?? '') : (_coverUrl ?? ''),
+        duration: duration ?? 0,
+        trackNumber: trackNumber,
+        discNumber: discNumber,
+        releaseDate: releaseDate,
+        isrc: isrc,
+        source: _isLocalItem ? 'local' : _service,
+        maxBitDepth: bitDepth,
+        maxSampleRate: sampleRate?.toDouble(),
+      );
+
       await ref
           .read(playbackProvider.notifier)
           .playLocalPath(
@@ -3286,7 +3304,8 @@ class _TrackMetadataScreenState extends ConsumerState<TrackMetadataScreen> {
             title: trackName,
             artist: artistName,
             album: albumName,
-            coverUrl: _coverUrl ?? '',
+            coverUrl: _isLocalItem ? (_localCoverPath ?? '') : (_coverUrl ?? ''),
+            track: track,
           );
     } catch (e) {
       if (context.mounted) {

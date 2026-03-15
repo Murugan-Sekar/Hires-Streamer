@@ -212,6 +212,7 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
             artist: track.artistName,
             album: track.albumName,
             coverUrl: track.coverPath ?? '',
+            track: _toTrack(track),
           );
     } catch (e) {
       if (mounted) {
@@ -237,6 +238,11 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
       releaseDate: item.releaseDate,
       coverUrl: item.coverPath,
       source: 'local',
+      maxBitDepth: item.bitDepth,
+      maxSampleRate: item.sampleRate?.toDouble(),
+      format: item.format,
+      bitrate: item.bitrate,
+      fileSize: item.fileSize,
     );
   }
 
@@ -384,19 +390,20 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
               ],
             ),
 
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              bottom: _isSelectionMode ? 0 : -(200 + bottomPadding),
-              child: _buildSelectionBottomBar(
-                context,
-                colorScheme,
-                tracks,
-                bottomPadding,
+            if (_isSelectionMode)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildSelectionBottomBar(
+                  context,
+                  colorScheme,
+                  tracks,
+                  bottomPadding,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -738,13 +745,23 @@ class _LocalAlbumScreenState extends ConsumerState<LocalAlbumScreen> {
           ),
           trailing: _isSelectionMode
               ? null
-              : IconButton(
-                  onPressed: () => _openFile(track),
-                  icon: Icon(Icons.play_arrow, color: colorScheme.primary),
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.primaryContainer.withValues(
-                      alpha: 0.3,
+              : Container(
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    onPressed: () => _openFile(track),
+                    icon: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 18,
                     ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ),
         ),

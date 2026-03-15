@@ -58,7 +58,8 @@ class DownloadHistoryItem {
   final String? genre;
   final String? label;
   final String? copyright;
-  final int fileSize;
+  final int? bitrate;
+  final int? fileSize;
 
   const DownloadHistoryItem({
     required this.id,
@@ -89,7 +90,8 @@ class DownloadHistoryItem {
     this.genre,
     this.label,
     this.copyright,
-    this.fileSize = 0,
+    this.bitrate,
+    this.fileSize,
   });
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +123,7 @@ class DownloadHistoryItem {
     'genre': genre,
     'label': label,
     'copyright': copyright,
+    'bitrate': bitrate,
     'fileSize': fileSize,
   };
 
@@ -154,7 +157,8 @@ class DownloadHistoryItem {
         genre: json['genre'] as String?,
         label: json['label'] as String?,
         copyright: json['copyright'] as String?,
-        fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
+        bitrate: (json['bitrate'] as num?)?.toInt(),
+        fileSize: (json['fileSize'] ?? json['file_size'] as num?)?.toInt(),
       );
 
   DownloadHistoryItem copyWith({
@@ -183,6 +187,7 @@ class DownloadHistoryItem {
     String? genre,
     String? label,
     String? copyright,
+    int? bitrate,
     int? fileSize,
   }) {
     return DownloadHistoryItem(
@@ -214,6 +219,7 @@ class DownloadHistoryItem {
       genre: genre ?? this.genre,
       label: label ?? this.label,
       copyright: copyright ?? this.copyright,
+      bitrate: bitrate ?? this.bitrate,
       fileSize: fileSize ?? this.fileSize,
     );
   }
